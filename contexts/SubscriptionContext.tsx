@@ -7,7 +7,7 @@ import {
   type Purchase,
 } from 'expo-iap';
 
-const PRODUCT_ID = 'com.christianappempire.statflowapp.premium';
+const PRODUCT_ID = 'com.christianappempire.statflowapppremium';
 
 export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
   const [isAdFree, setIsAdFree] = useState(false);
