@@ -1,0 +1,202 @@
+import { Sport, SportConfig } from '@/types';
+
+export const SPORTS_CONFIG: Record<Sport, SportConfig> = {
+  basketball: {
+    name: 'Basketball',
+    icon: '🏀',
+    stats: [
+      { key: 'points', label: 'Points', shortLabel: 'PTS' },
+      { key: 'rebounds', label: 'Rebounds', shortLabel: 'REB' },
+      { key: 'assists', label: 'Assists', shortLabel: 'AST' },
+      { key: 'steals', label: 'Steals', shortLabel: 'STL' },
+      { key: 'blocks', label: 'Blocks', shortLabel: 'BLK' },
+    ],
+  },
+  football: {
+    name: 'Football',
+    icon: '🏈',
+    stats: [
+      { key: 'tackles', label: 'Tackles', shortLabel: 'TKL' },
+      { key: 'receptions', label: 'Receptions', shortLabel: 'REC' },
+      { key: 'receivingYards', label: 'Receiving Yards', shortLabel: 'YDS' },
+      { key: 'touchdowns', label: 'Touchdowns', shortLabel: 'TD' },
+      { key: 'sacks', label: 'Sacks', shortLabel: 'SCK' },
+    ],
+  },
+  soccer: {
+    name: 'Soccer',
+    icon: '⚽',
+    stats: [
+      { key: 'goals', label: 'Goals', shortLabel: 'G' },
+      { key: 'assists', label: 'Assists', shortLabel: 'A' },
+      { key: 'shots', label: 'Shots', shortLabel: 'SH' },
+      { key: 'minutesPlayed', label: 'Minutes Played', shortLabel: 'MIN' },
+    ],
+  },
+  baseball: {
+    name: 'Baseball',
+    icon: '⚾',
+    stats: [
+      { key: 'hits', label: 'Hits', shortLabel: 'H' },
+      { key: 'rbis', label: 'RBIs', shortLabel: 'RBI' },
+      { key: 'runs', label: 'Runs', shortLabel: 'R' },
+      { key: 'strikeouts', label: 'Strikeouts', shortLabel: 'K' },
+    ],
+  },
+  volleyball: {
+    name: 'Volleyball',
+    icon: '🏐',
+    stats: [
+      { key: 'kills', label: 'Kills', shortLabel: 'K' },
+      { key: 'assists', label: 'Assists', shortLabel: 'AST' },
+      { key: 'digs', label: 'Digs', shortLabel: 'DIG' },
+      { key: 'blocks', label: 'Blocks', shortLabel: 'BLK' },
+      { key: 'aces', label: 'Aces', shortLabel: 'ACE' },
+    ],
+  },
+  hockey: {
+    name: 'Hockey',
+    icon: '🏒',
+    stats: [
+      { key: 'goals', label: 'Goals', shortLabel: 'G' },
+      { key: 'assists', label: 'Assists', shortLabel: 'A' },
+      { key: 'shots', label: 'Shots', shortLabel: 'SOG' },
+      { key: 'plusMinus', label: 'Plus/Minus', shortLabel: '+/-' },
+      { key: 'penaltyMinutes', label: 'Penalty Minutes', shortLabel: 'PIM' },
+    ],
+  },
+  golf: {
+    name: 'Golf',
+    icon: '⛳',
+    stats: [
+      { key: 'score', label: 'Score', shortLabel: 'SCR' },
+      { key: 'putts', label: 'Putts', shortLabel: 'PUT' },
+      { key: 'fairwaysHit', label: 'Fairways Hit', shortLabel: 'FW' },
+      { key: 'greensInReg', label: 'Greens in Reg', shortLabel: 'GIR' },
+      { key: 'birdiesOrBetter', label: 'Birdies or Better', shortLabel: 'BRD' },
+    ],
+  },
+  tennis: {
+    name: 'Tennis',
+    icon: '🎾',
+    stats: [
+      { key: 'aces', label: 'Aces', shortLabel: 'ACE' },
+      { key: 'doubleFaults', label: 'Double Faults', shortLabel: 'DF' },
+      { key: 'winners', label: 'Winners', shortLabel: 'WIN' },
+      { key: 'unforcedErrors', label: 'Unforced Errors', shortLabel: 'UE' },
+      { key: 'gamesWon', label: 'Games Won', shortLabel: 'GW' },
+    ],
+  },
+  lacrosse: {
+    name: 'Lacrosse',
+    icon: '🥍',
+    stats: [
+      { key: 'goals', label: 'Goals', shortLabel: 'G' },
+      { key: 'assists', label: 'Assists', shortLabel: 'A' },
+      { key: 'shots', label: 'Shots', shortLabel: 'SH' },
+      { key: 'groundBalls', label: 'Ground Balls', shortLabel: 'GB' },
+      { key: 'turnovers', label: 'Turnovers', shortLabel: 'TO' },
+      { key: 'faceoffsWon', label: 'Faceoffs Won', shortLabel: 'FOW' },
+    ],
+  },
+  track_and_field: {
+    name: 'Track & Field',
+    icon: '🏃',
+    stats: [
+      { key: 'time', label: 'Time (sec)', shortLabel: 'TIME' },
+      { key: 'distance', label: 'Distance (m)', shortLabel: 'DIST' },
+      { key: 'height', label: 'Height (m)', shortLabel: 'HT' },
+      { key: 'personalBest', label: 'Personal Best', shortLabel: 'PB' },
+      { key: 'placement', label: 'Placement', shortLabel: 'PLC' },
+    ],
+  },
+  softball: {
+    name: 'Softball',
+    icon: '🥎',
+    stats: [
+      { key: 'hits', label: 'Hits', shortLabel: 'H' },
+      { key: 'runs', label: 'Runs', shortLabel: 'R' },
+      { key: 'rbis', label: 'RBIs', shortLabel: 'RBI' },
+      { key: 'homeRuns', label: 'Home Runs', shortLabel: 'HR' },
+      { key: 'strikeouts', label: 'Strikeouts', shortLabel: 'K' },
+      { key: 'stolenBases', label: 'Stolen Bases', shortLabel: 'SB' },
+    ],
+  },
+  rugby: {
+    name: 'Rugby',
+    icon: '🏉',
+    stats: [
+      { key: 'tries', label: 'Tries', shortLabel: 'TRY' },
+      { key: 'conversions', label: 'Conversions', shortLabel: 'CON' },
+      { key: 'tackles', label: 'Tackles', shortLabel: 'TKL' },
+      { key: 'carries', label: 'Carries', shortLabel: 'CAR' },
+      { key: 'lineoutsWon', label: 'Lineouts Won', shortLabel: 'LO' },
+      { key: 'penalties', label: 'Penalties', shortLabel: 'PEN' },
+    ],
+  },
+  cricket: {
+    name: 'Cricket',
+    icon: '🏏',
+    stats: [
+      { key: 'runsScored', label: 'Runs Scored', shortLabel: 'R' },
+      { key: 'wickets', label: 'Wickets', shortLabel: 'W' },
+      { key: 'catches', label: 'Catches', shortLabel: 'CT' },
+      { key: 'fours', label: 'Fours', shortLabel: '4s' },
+      { key: 'sixes', label: 'Sixes', shortLabel: '6s' },
+      { key: 'overs', label: 'Overs Bowled', shortLabel: 'OV' },
+    ],
+  },
+  boxing: {
+    name: 'Boxing',
+    icon: '🥊',
+    stats: [
+      { key: 'punchesThrown', label: 'Punches Thrown', shortLabel: 'PT' },
+      { key: 'punchesLanded', label: 'Punches Landed', shortLabel: 'PL' },
+      { key: 'knockdowns', label: 'Knockdowns', shortLabel: 'KD' },
+      { key: 'roundsWon', label: 'Rounds Won', shortLabel: 'RW' },
+      { key: 'jabsLanded', label: 'Jabs Landed', shortLabel: 'JAB' },
+      { key: 'powerShots', label: 'Power Shots', shortLabel: 'PWR' },
+    ],
+  },
+  swimming: {
+    name: 'Swimming',
+    icon: '🏊',
+    stats: [
+      { key: 'time', label: 'Time (sec)', shortLabel: 'TIME' },
+      { key: 'laps', label: 'Laps', shortLabel: 'LAP' },
+      { key: 'distance', label: 'Distance (m)', shortLabel: 'DIST' },
+      { key: 'strokes', label: 'Strokes', shortLabel: 'STR' },
+      { key: 'placement', label: 'Placement', shortLabel: 'PLC' },
+    ],
+  },
+  bowling: {
+    name: 'Bowling',
+    icon: '🎳',
+    stats: [
+      { key: 'score', label: 'Score', shortLabel: 'SCR' },
+      { key: 'strikes', label: 'Strikes', shortLabel: 'X' },
+      { key: 'spares', label: 'Spares', shortLabel: 'SP' },
+      { key: 'openFrames', label: 'Open Frames', shortLabel: 'OF' },
+      { key: 'highGame', label: 'High Game', shortLabel: 'HG' },
+    ],
+  },
+};
+
+export const SPORT_OPTIONS: { value: Sport; label: string }[] = [
+  { value: 'basketball', label: '🏀 Basketball' },
+  { value: 'football', label: '🏈 Football' },
+  { value: 'soccer', label: '⚽ Soccer' },
+  { value: 'baseball', label: '⚾ Baseball' },
+  { value: 'softball', label: '🥎 Softball' },
+  { value: 'volleyball', label: '🏐 Volleyball' },
+  { value: 'hockey', label: '🏒 Hockey' },
+  { value: 'lacrosse', label: '🥍 Lacrosse' },
+  { value: 'rugby', label: '🏉 Rugby' },
+  { value: 'cricket', label: '🏏 Cricket' },
+  { value: 'track_and_field', label: '🏃 Track & Field' },
+  { value: 'boxing', label: '🥊 Boxing' },
+  { value: 'swimming', label: '🏊 Swimming' },
+  { value: 'bowling', label: '🎳 Bowling' },
+  { value: 'golf', label: '⛳ Golf' },
+  { value: 'tennis', label: '🎾 Tennis' },
+];
