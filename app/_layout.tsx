@@ -9,6 +9,7 @@ import { AppProvider } from "@/contexts/AppContext";
 import { PlayerProvider } from "@/contexts/PlayerContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { initializeAds, showInterstitialAd, hasInterstitialCooldownPassed } from "@/services/ads";
+import { requestTrackingPermission } from "@/services/tracking";
 import { Colors } from "@/constants/colors";
 
 const APP_OPENS_LIFETIME_KEY = "statflow_app_opens_lifetime";
@@ -93,9 +94,13 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (Platform.OS !== 'web') {
-      console.log('[App] Initializing ads and requesting ATT...');
-      void initializeAds().then(() => {
-        void trackAppOpenAndMaybeShowAd();
+      console.log('[App] Requesting ATT permission first...');
+      // Request ATT immediately on launch - must show before any data collection
+      void requestTrackingPermission().then(() => {
+        console.log('[App] ATT handled, initializing ads...');
+        void initializeAds().then(() => {
+          void trackAppOpenAndMaybeShowAd();
+        });
       });
     }
   }, []);

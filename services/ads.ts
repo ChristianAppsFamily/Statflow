@@ -178,7 +178,7 @@ export async function checkAndShowPlayerThresholdInterstitial(totalPlayers: numb
   if (totalPlayers <= 3) return;
 
   try {
-    const { AsyncStorage } = await import('@react-native-async-storage/async-storage');
+    const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
     const alreadyShown = await AsyncStorage.getItem(PLAYER_THRESHOLD_SHOWN_KEY);
     if (alreadyShown === 'true') {
       console.log('[Ads] Player threshold interstitial already shown');
@@ -211,7 +211,7 @@ export async function checkAndShowSportsThresholdInterstitial(sports: string[]):
   if (sports.length <= 2) return;
 
   try {
-    const { AsyncStorage } = await import('@react-native-async-storage/async-storage');
+    const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
     const alreadyShown = await AsyncStorage.getItem(SPORTS_THRESHOLD_SHOWN_KEY);
     if (alreadyShown === 'true') {
       console.log('[Ads] Sports threshold interstitial already shown');
@@ -236,7 +236,7 @@ export async function checkAndShowSportsThresholdInterstitial(sports: string[]):
  */
 export async function getTrackedSports(): Promise<string[]> {
   try {
-    const { AsyncStorage } = await import('@react-native-async-storage/async-storage');
+    const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
     const stored = await AsyncStorage.getItem(TRACKED_SPORTS_KEY);
     return stored ? JSON.parse(stored) : [];
   } catch (e) {
@@ -250,7 +250,7 @@ export async function getTrackedSports(): Promise<string[]> {
  */
 export async function addTrackedSport(sport: string): Promise<string[]> {
   try {
-    const { AsyncStorage } = await import('@react-native-async-storage/async-storage');
+    const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
     const current = await getTrackedSports();
     if (!current.includes(sport)) {
       const updated = [...current, sport];
