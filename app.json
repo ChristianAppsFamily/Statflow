@@ -32,9 +32,11 @@
       "package": "com.christianappempire.statflowapp",
       "permissions": [
         "android.permission.VIBRATE",
-        "CAMERA",
-        "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO",
+        "com.google.android.gms.permission.AD_ID"
       ],
       "manifest": []
     },
@@ -73,6 +75,15 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {
+        "origin": "https://rork.com/"
+      },
+      "eas": {
+        "projectId": "057caef3-ce8d-40b3-b2d8-c1e56273dd7e"
+      }
+    },
+    "owner": "christappsfamily"
   }
 }
