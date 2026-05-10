@@ -29,7 +29,7 @@ export async function initializeAds(): Promise<void> {
   }
 
   try {
-    // Step 1: ATT permission (iOS)
+    // Step 1: ATT permission (iOS) - MUST be called before any data collection
     console.log('[Ads] Requesting ATT permission...');
     trackingGranted = await requestTrackingPermission();
     console.log('[Ads] Tracking granted:', trackingGranted);

@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -10,10 +10,12 @@ import { PlayerProvider } from "@/contexts/PlayerContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { initializeAds, showInterstitialAd, hasInterstitialCooldownPassed } from "@/services/ads";
 import { requestTrackingPermission } from "@/services/tracking";
+import ATTPermissionScreen from "@/components/ATTPermissionScreen";
 import { Colors } from "@/constants/colors";
 
 const APP_OPENS_LIFETIME_KEY = "statflow_app_opens_lifetime";
 const FIRST_OPEN_COMPLETED_KEY = "statflow_first_open_completed";
+const ATT_COMPLETED_KEY = "statflow_att_completed";
 
 /**
  * Show interstitial when app is opened every 7th time (7, 14, 21, 28, etc.)
@@ -88,22 +90,43 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  const [attCompleted, setAttCompleted] = useState<boolean | null>(null);
+
   useEffect(() => {
     void SplashScreen.hideAsync();
+    
+    // Check if ATT was already completed
+    AsyncStorage.getItem(ATT_COMPLETED_KEY).then((value) => {
+      if (value === 'true') {
+        setAttCompleted(true);
+      } else {
+        setAttCompleted(false);
+      }
+    });
   }, []);
 
   useEffect(() => {
-    if (Platform.OS !== 'web') {
-      console.log('[App] Requesting ATT permission first...');
-      // Request ATT immediately on launch - must show before any data collection
-      void requestTrackingPermission().then(() => {
-        console.log('[App] ATT handled, initializing ads...');
-        void initializeAds().then(() => {
-          void trackAppOpenAndMaybeShowAd();
-        });
+    if (attCompleted === true && Platform.OS !== 'web') {
+      console.log('[App] ATT completed, initializing ads...');
+      void initializeAds().then(() => {
+        void trackAppOpenAndMaybeShowAd();
       });
     }
-  }, []);
+  }, [attCompleted]);
+
+  const handleATTComplete = async () => {
+    await AsyncStorage.setItem(ATT_COMPLETED_KEY, 'true');
+    setAttCompleted(true);
+  };
+
+  // Show loading or ATT screen
+  if (attCompleted === null) {
+    return null; // Still checking
+  }
+
+  if (attCompleted === false && Platform.OS === 'ios') {
+    return <ATTPermissionScreen onComplete={handleATTComplete} />;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>

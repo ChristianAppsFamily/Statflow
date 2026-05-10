@@ -17,10 +17,10 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.christianappempire.statflowapp",
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access your photos",
-        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera",
-        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to access your microphone",
-        "NSUserTrackingUsageDescription": "This identifier will be used to deliver personalized ads and help support the app.",
+        "NSPhotoLibraryUsageDescription": "StatFlow accesses your photos so you can upload player profile images and share game photos with your team.",
+        "NSCameraUsageDescription": "StatFlow uses your camera to scan player photos or capture profile images for your sports tracking. Photos are stored locally on your device and are only visible to you.",
+        "NSMicrophoneUsageDescription": "StatFlow uses your microphone for voice notes about game stats and player observations.",
+        "NSUserTrackingUsageDescription": "Your data will be used to deliver personalized ads that support StatFlow and keep the app free. This helps us continue improving your sports tracking experience.",,
         "GADApplicationIdentifier": "ca-app-pub-3002325591150738~3761291425"
       }
     },

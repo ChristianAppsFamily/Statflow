@@ -1,8 +1,5 @@
 import { Platform } from 'react-native';
-import { 
-  requestTrackingPermissionsAsync, 
-  getTrackingPermissionsAsync
-} from 'expo-tracking-transparency';
+import { requestTrackingPermissionsAsync, getTrackingPermissionsAsync } from 'expo-tracking-transparency';
 
 export async function requestTrackingPermission(): Promise<boolean> {
   if (Platform.OS !== 'ios') {
