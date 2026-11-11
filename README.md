@@ -103,69 +103,44 @@ bun run start -- --android
 
 ## How can I deploy this project?
 
+StatFlow is shipped **manually with Xcode** (no cloud build service).
+
 ### **Publish to App Store (iOS)**
 
-1. **Install EAS CLI**:
+1. From the project root, install JS deps if needed, then refresh native pods:
 
    ```bash
-   bun i -g @expo/eas-cli
+   npm install
+   cd ios && pod install && cd ..
    ```
 
-2. **Configure your project**:
+2. Open the workspace (not the `.xcodeproj`):
 
    ```bash
-   eas build:configure
+   open ios/StatFlow.xcworkspace
    ```
 
-3. **Build for iOS**:
+3. In Xcode:
+   - Select the **StatFlow** scheme and your physical iPhone (unlocked + Trusted)
+   - Prefer **Debug** for day-to-day device testing
+   - Product → Clean Build Folder, then Run on device
+   - For App Store: set a new **Build** number, Product → **Archive**, then Distribute App → App Store Connect
 
-   ```bash
-   eas build --platform ios
-   ```
+4. Finish version notes / review in [App Store Connect](https://appstoreconnect.apple.com/).
 
-4. **Submit to App Store**:
-   ```bash
-   eas submit --platform ios
-   ```
-
-For detailed instructions, visit [Expo's App Store deployment guide](https://docs.expo.dev/submit/ios/).
+If you see missing `*.modulemap` errors, delete StatFlow DerivedData, run `pod install` again, and rebuild from the workspace.
 
 ### **Publish to Google Play (Android)**
 
-1. **Build for Android**:
-
-   ```bash
-   eas build --platform android
-   ```
-
-2. **Submit to Google Play**:
-   ```bash
-   eas submit --platform android
-   ```
-
-For detailed instructions, visit [Expo's Google Play deployment guide](https://docs.expo.dev/submit/android/).
+Build and sign with Android Studio from the `android/` project (when present), then upload the AAB in Google Play Console.
 
 ### **Publish as a Website**
 
-Your React Native app can also run on the web:
+```bash
+bun run start-web
+```
 
-1. **Build for web**:
-
-   ```bash
-   eas build --platform web
-   ```
-
-2. **Deploy with EAS Hosting**:
-   ```bash
-   eas hosting:configure
-   eas hosting:deploy
-   ```
-
-Alternative web deployment options:
-
-- **Vercel**: Deploy directly from your GitHub repository
-- **Netlify**: Connect your GitHub repo to Netlify for automatic deployments
-
+Or deploy a static/web export with Vercel or Netlify if you choose to host the web build.
 ## App Features
 
 This template includes:
@@ -207,28 +182,21 @@ For advanced native features, you'll need to create a Custom Development Build i
 - **Advanced Native Features**: Third-party SDKs, platform-specifc features (e.g. Widgets on iOS)
 - **Background Processing**: Background tasks, location tracking
 
-### **Creating a Custom Development Build**
+### **Creating a Custom Development Build (manual)**
+
+This project already uses a native `ios/` workspace. After changing native modules:
 
 ```bash
-# Install EAS CLI
-bun i -g @expo/eas-cli
-
-# Configure your project for development builds
-eas build:configure
-
-# Create a development build for your device
-eas build --profile development --platform ios
-eas build --profile development --platform android
-
-# Install the development build on your device and start developing
-bun start --dev-client
+cd ios && pod install && cd ..
+open ios/StatFlow.xcworkspace
 ```
+
+Then Run on your device from Xcode. Start Metro separately if needed (`bun start` / `npm start`).
 
 **Learn more:**
 
 - [Development Builds Introduction](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Creating Development Builds](https://docs.expo.dev/develop/development-builds/create-a-build/)
-- [Installing Development Builds](https://docs.expo.dev/develop/development-builds/installation/)
+- [Local app compilation](https://docs.expo.dev/guides/local-app-development/)
 
 ## Advanced Features
 
@@ -283,13 +251,9 @@ Monetize your app:
 
 ## I want to use a custom domain - is that possible?
 
-For web deployments, you can use custom domains with:
+For web deployments, you can use custom domains with Netlify or Vercel.
 
-- **EAS Hosting** - Custom domains available on paid plans
-- **Netlify** - Free custom domain support
-- **Vercel** - Custom domains with automatic SSL
-
-For mobile apps, you'll configure your app's deep linking scheme in `app.json`.
+For mobile apps, configure your app's deep linking scheme in `app.json`.
 
 ## Troubleshooting
 
@@ -299,11 +263,12 @@ For mobile apps, you'll configure your app's deep linking scheme in `app.json`.
 2. Try using tunnel mode: `bun start -- --tunnel`
 3. Check if your firewall is blocking the connection
 
-### **Build failing?**
+### **Build failing (Xcode)?**
 
-1. Clear your cache: `bunx expo start --clear`
-2. Delete `node_modules` and reinstall: `rm -rf node_modules && bun install`
-3. Check [Expo's troubleshooting guide](https://docs.expo.dev/troubleshooting/build-errors/)
+1. Quit Xcode and clear StatFlow DerivedData: `rm -rf ~/Library/Developer/Xcode/DerivedData/StatFlow-*`
+2. Reinstall pods: `cd ios && pod install && cd ..`
+3. Open `ios/StatFlow.xcworkspace`, Clean Build Folder, then build again
+4. Clear Metro cache if JS is stale: `npx expo start --clear`
 
 ### **Need help with native features?**
 
