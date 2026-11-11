@@ -5,6 +5,7 @@ import { useCallback, useMemo } from 'react';
 
 import { AppSettings, Session, Highlight } from '@/types';
 import { checkAndShowSportsThresholdInterstitial, addTrackedSport } from '@/services/ads';
+import { checkReviewPromptAfterStatSaved } from '@/services/appReview';
 
 const SESSIONS_KEY = 'statflow_sessions';
 const SETTINGS_KEY = 'statflow_settings';
@@ -85,6 +86,8 @@ export const [AppProvider, useApp] = createContextHook(() => {
     } catch (e) {
       console.log('[AppContext] Sports tracking error:', e);
     }
+
+    void checkReviewPromptAfterStatSaved();
   }, [sessionsQuery.data, saveSessionsMutation]);
 
   const updateSession = useCallback((sessionId: string, updates: Partial<Session>) => {

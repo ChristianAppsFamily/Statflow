@@ -13,7 +13,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Shield, CheckCircle, RefreshCw, ExternalLink } from 'lucide-react-native';
+import { Shield, CheckCircle, RefreshCw, ExternalLink, Star } from 'lucide-react-native';
+import { openAppStoreReview } from '@/services/appReview';
 import { useApp } from '@/contexts/AppContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Colors } from '@/constants/colors';
@@ -101,6 +102,10 @@ export default function SettingsScreen() {
     } catch {
       Alert.alert('Error', 'Could not open Instagram.');
     }
+  };
+
+  const handleRateApp = () => {
+    void openAppStoreReview();
   };
 
   const handleOpenPrivacyPolicy = async () => {
@@ -259,6 +264,23 @@ export default function SettingsScreen() {
           </TouchableOpacity>
           <Text style={styles.buttonSubtext}>Follow us on Instagram</Text>
         </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>APP</Text>
+
+        <TouchableOpacity
+          style={styles.policyButton}
+          onPress={handleRateApp}
+          activeOpacity={0.7}
+          testID="rate-app-button"
+        >
+          <View style={styles.policyButtonInner}>
+            <Star size={20} color={Colors.gold} />
+            <Text style={styles.policyButtonText}>Rate This App</Text>
+          </View>
+          <ExternalLink size={16} color={Colors.textSecondary} />
+        </TouchableOpacity>
       </View>
 
       <View style={styles.section}>

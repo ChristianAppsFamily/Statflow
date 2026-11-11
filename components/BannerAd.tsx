@@ -45,6 +45,11 @@ export default function BannerAdComponent({
         const gma = require('react-native-google-mobile-ads');
         const { BannerAd: NativeBannerAd, BannerAdSize } = gma;
 
+        if (typeof NativeBannerAd !== 'function' && typeof NativeBannerAd !== 'object') {
+          console.log('[BannerAd] BannerAd export is not a valid component');
+          return;
+        }
+
         const sizeMap: Record<string, string> = {
           banner: BannerAdSize.ADAPTIVE_BANNER,
           largeBanner: BannerAdSize.LARGE_BANNER,

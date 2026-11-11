@@ -42,8 +42,7 @@ export const TEST_AD_UNIT_IDS = Platform.select({
   },
 }) as { banner: string; interstitial: string; rewarded: string };
 
-// Force test ads until production ad units are verified
-export const USE_TEST_ADS = true; // was: __DEV__
+export const USE_TEST_ADS = __DEV__;
 
 export function getAdUnitId(type: 'banner' | 'interstitial' | 'rewarded'): string {
   return USE_TEST_ADS ? TEST_AD_UNIT_IDS[type] : AD_UNIT_IDS[type];

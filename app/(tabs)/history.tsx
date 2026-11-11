@@ -16,6 +16,7 @@ import { SPORTS_CONFIG } from '@/constants/sports';
 import { Sport, Session } from '@/types';
 import { Colors } from '@/constants/colors';
 import BannerAdComponent from '@/components/BannerAd';
+import { formatSessionDate } from '@/utils/sessionDate';
 
 type FilterOption = 'all' | Sport;
 
@@ -53,14 +54,12 @@ export default function HistoryScreen() {
     return playerSessions.filter((s) => s.sport === filter);
   }, [playerSessions, filter]);
 
-  const formatDate = (isoDate: string) => {
-    const date = new Date(isoDate);
-    return date.toLocaleDateString('en-US', {
+  const formatDate = (isoDate: string) =>
+    formatSessionDate(isoDate, {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
     });
-  };
 
   const getStatSummary = (session: Session) => {
     const config = SPORTS_CONFIG[session.sport];

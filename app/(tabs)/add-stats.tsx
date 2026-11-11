@@ -8,6 +8,8 @@ import {
   TextInput,
   Platform,
   Alert,
+  Keyboard,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Plus, Minus, Save, RotateCcw, X, UserPlus, Star, Link } from 'lucide-react-native';
@@ -21,12 +23,13 @@ import { Colors } from '@/constants/colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showInterstitialAd } from '@/services/ads';
 import BannerAdComponent from '@/components/BannerAd';
+import { getLocalDateString, toStoredSessionDate } from '@/utils/sessionDate';
 
 const DAILY_GAMES_KEY = 'statflow_daily_games';
 
 async function incrementDailyGames(): Promise<number> {
   try {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const raw = await AsyncStorage.getItem(DAILY_GAMES_KEY);
     let data: { count: number; date: string } = raw ? JSON.parse(raw) : { count: 0, date: today };
     if (data.date !== today) data = { count: 0, date: today };
@@ -43,7 +46,7 @@ export default function AddStatsScreen() {
   const insets = useSafeAreaInsets();
   
   const [selectedSport, setSelectedSport] = useState<Sport | null>(null);
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [date, setDate] = useState(getLocalDateString());
   const [opponent, setOpponent] = useState('');
   const [notes, setNotes] = useState('');
   const [stats, setStats] = useState<Record<string, number>>({});
@@ -73,6 +76,7 @@ export default function AddStatsScreen() {
   };
 
   const handleReset = () => {
+    Keyboard.dismiss();
     if (Platform.OS === 'web') {
       const confirmed = window.confirm('Reset all stats?');
       if (confirmed) {
@@ -109,6 +113,7 @@ export default function AddStatsScreen() {
   };
 
   const handleSave = () => {
+    Keyboard.dismiss();
     if (!selectedSport) return;
 
     const allZero = Object.values(stats).every((val) => val === 0);
@@ -141,7 +146,7 @@ export default function AddStatsScreen() {
     const session: Session = {
       id: sessionId,
       sport: selectedSport,
-      date: new Date(date).toISOString(),
+      date: toStoredSessionDate(date),
       opponent: opponent.trim() || undefined,
       notes: notes.trim() || undefined,
       stats,
@@ -182,7 +187,7 @@ export default function AddStatsScreen() {
     setStats({});
     setOpponent('');
     setNotes('');
-    setDate(new Date().toISOString().split('T')[0]);
+    setDate(getLocalDateString());
     setOutcome(null);
     setTeamScore('');
     setOpponentScore('');
@@ -253,13 +258,24 @@ export default function AddStatsScreen() {
     <View style={styles.container}>
       {/* TOP BANNER AD */}
       <BannerAdComponent position="top" />
-    <ScrollView style={styles.scrollInner} contentContainerStyle={[styles.content, { paddingTop: 16 }]}>
+    <KeyboardAvoidingView
+      style={styles.scrollInner}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
+    >
+    <ScrollView
+      style={styles.scrollInner}
+      contentContainerStyle={[styles.content, { paddingTop: 16, paddingBottom: 40 }]}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+    >
       <View style={styles.header}>
         <Text style={styles.sportTitle}>
           {sportConfig?.icon} {sportConfig?.name}
         </Text>
         <TouchableOpacity
           onPress={() => {
+            Keyboard.dismiss();
             setSelectedSport(null);
             setStats({});
           }}
@@ -278,6 +294,9 @@ export default function AddStatsScreen() {
             onChangeText={setDate}
             placeholder="YYYY-MM-DD"
             placeholderTextColor={Colors.textSecondary}
+            returnKeyType="done"
+            blurOnSubmit
+            onSubmitEditing={Keyboard.dismiss}
           />
         </View>
 
@@ -289,6 +308,9 @@ export default function AddStatsScreen() {
             onChangeText={setOpponent}
             placeholder="Team name or opponent"
             placeholderTextColor={Colors.textSecondary}
+            returnKeyType="done"
+            blurOnSubmit
+            onSubmitEditing={Keyboard.dismiss}
           />
         </View>
 
@@ -302,7 +324,16 @@ export default function AddStatsScreen() {
             placeholderTextColor={Colors.textSecondary}
             multiline
             numberOfLines={3}
+            blurOnSubmit={false}
+            textAlignVertical="top"
           />
+          <TouchableOpacity
+            style={styles.dismissKeyboardButton}
+            onPress={Keyboard.dismiss}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.dismissKeyboardText}>Done</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -613,6 +644,7 @@ export default function AddStatsScreen() {
         </TouchableOpacity>
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
     </View>
   );
 }
@@ -710,6 +742,16 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 80,
     textAlignVertical: 'top',
+  },
+  dismissKeyboardButton: {
+    alignSelf: 'flex-end',
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+  },
+  dismissKeyboardText: {
+    color: Colors.gold,
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
   sectionTitle: {
     fontSize: 13,

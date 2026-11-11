@@ -16,6 +16,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.christianappempire.statflowapp",
+      "appStoreUrl": "https://apps.apple.com/us/app/statflow-youth-sports-tracker/id6763165361",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "StatFlow accesses your photos so you can upload player profile images and share game photos with your team.",
         "NSCameraUsageDescription": "StatFlow uses your camera to scan player photos or capture profile images for your sports tracking. Photos are stored locally on your device and are only visible to you.",

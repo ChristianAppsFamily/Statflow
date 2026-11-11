@@ -13,6 +13,7 @@ import {
   Dimensions,
   Linking,
   Keyboard,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Edit2, Trash2, Save, X, Share2, Copy, Video as VideoIcon, Link, Plus, Play, ExternalLink, Star } from 'lucide-react-native';
@@ -24,6 +25,7 @@ import { usePlayers } from '@/contexts/PlayerContext';
 import { SPORTS_CONFIG } from '@/constants/sports';
 import { Session, Highlight } from '@/types';
 import { Colors } from '@/constants/colors';
+import { formatSessionDate } from '@/utils/sessionDate';
 
 type HighlightAddMode = 'none' | 'link' | 'file';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -64,15 +66,13 @@ export default function SessionDetailScreen() {
 
   const sportConfig = SPORTS_CONFIG[session.sport];
 
-  const formatDate = (isoDate: string) => {
-    const date = new Date(isoDate);
-    return date.toLocaleDateString('en-US', {
+  const formatDate = (isoDate: string) =>
+    formatSessionDate(isoDate, {
       weekday: 'long',
       month: 'long',
       day: 'numeric',
       year: 'numeric',
     });
-  };
 
   const handleEdit = () => {
     setEditedSession({ ...session });
@@ -80,6 +80,7 @@ export default function SessionDetailScreen() {
   };
 
   const handleSave = () => {
+    Keyboard.dismiss();
     if (editedSession) {
       updateSession(session.id, editedSession);
       if (settings.hapticsEnabled && Platform.OS !== 'web') {
@@ -90,6 +91,7 @@ export default function SessionDetailScreen() {
   };
 
   const handleCancel = () => {
+    Keyboard.dismiss();
     setIsEditing(false);
     setEditedSession(null);
   };
@@ -392,7 +394,17 @@ export default function SessionDetailScreen() {
   }, [sportConfig.stats, currentSession.stats]);
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+    >
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={[styles.content, { paddingBottom: 40 }]}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+    >
       <View style={styles.header}>
         <Text style={styles.sportTitle}>
           {sportConfig.icon} {sportConfig.name}
@@ -535,17 +547,28 @@ export default function SessionDetailScreen() {
         <View style={styles.notesCard}>
           <Text style={styles.notesLabel}>NOTES</Text>
           {isEditing ? (
-            <TextInput
-              style={[styles.editInput, styles.textArea]}
-              value={editedSession?.notes || ''}
-              onChangeText={(text) =>
-                setEditedSession((prev) => (prev ? { ...prev, notes: text } : null))
-              }
-              placeholder="Notes"
-              placeholderTextColor={Colors.textSecondary}
-              multiline
-              numberOfLines={3}
-            />
+            <>
+              <TextInput
+                style={[styles.editInput, styles.textArea]}
+                value={editedSession?.notes || ''}
+                onChangeText={(text) =>
+                  setEditedSession((prev) => (prev ? { ...prev, notes: text } : null))
+                }
+                placeholder="Notes"
+                placeholderTextColor={Colors.textSecondary}
+                multiline
+                numberOfLines={3}
+                blurOnSubmit={false}
+                textAlignVertical="top"
+              />
+              <TouchableOpacity
+                style={styles.dismissKeyboardButton}
+                onPress={Keyboard.dismiss}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.dismissKeyboardText}>Done</Text>
+              </TouchableOpacity>
+            </>
           ) : (
             <Text style={styles.notesText}>{currentSession.notes}</Text>
           )}
@@ -860,6 +883,7 @@ export default function SessionDetailScreen() {
         </View>
       </Modal>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -1012,6 +1036,17 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600' as const,
     color: Colors.textPrimary,
+  },
+  dismissKeyboardButton: {
+    alignSelf: 'flex-end',
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    marginTop: 4,
+  },
+  dismissKeyboardText: {
+    color: Colors.gold,
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
   notesCard: {
     backgroundColor: Colors.card,

@@ -23,6 +23,7 @@ import { usePlayers } from '@/contexts/PlayerContext';
 import { Highlight, Sport } from '@/types';
 import { SPORTS_CONFIG } from '@/constants/sports';
 import { Colors } from '@/constants/colors';
+import { formatSessionDate } from '@/utils/sessionDate';
 
 type AddMode = 'none' | 'link' | 'file';
 
@@ -211,14 +212,12 @@ export default function HighlightsScreen() {
     setPlayingUri(null);
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+  const formatDate = (dateString: string) =>
+    formatSessionDate(dateString, {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
     });
-  };
 
 
   const getSessionLabel = (sessionId?: string) => {
@@ -226,8 +225,7 @@ export default function HighlightsScreen() {
     const session = sessions.find((s) => s.id === sessionId);
     if (!session) return null;
     const config = SPORTS_CONFIG[session.sport];
-    const date = new Date(session.date);
-    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const dateStr = formatSessionDate(session.date, { month: 'short', day: 'numeric' });
     return `${config.icon} ${dateStr}${session.opponent ? ` vs ${session.opponent}` : ''}`;
   };
 

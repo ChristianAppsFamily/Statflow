@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import { requestTrackingPermission } from '@/services/tracking';
+import { getTrackingStatus } from '@/services/tracking';
 
 let adsInitialized = false;
 let trackingGranted = false;
@@ -29,29 +29,41 @@ export async function initializeAds(): Promise<void> {
   }
 
   try {
-    // Step 1: ATT permission (iOS) - MUST be called before any data collection
-    console.log('[Ads] Requesting ATT permission...');
-    trackingGranted = await requestTrackingPermission();
+    // ATT is handled by ATTPermissionScreen on iOS; only read status here (do not re-prompt)
+    trackingGranted = (await getTrackingStatus()) === 'granted';
     console.log('[Ads] Tracking granted:', trackingGranted);
 
     // Step 2: Import SDK dynamically (safe — won't crash if not installed)
-    let MobileAds: any = null;
     try {
       const gma = require('react-native-google-mobile-ads');
-      MobileAds = gma.MobileAds || gma.default;
+      const mobileAdsFactory = gma.MobileAds ?? gma.default;
       InterstitialAd = gma.InterstitialAd;
       AdEventType = gma.AdEventType;
 
-      if (!MobileAds) throw new Error('MobileAds not found in SDK');
+      if (typeof mobileAdsFactory !== 'function') {
+        console.log('[Ads] MobileAds export is not callable');
+        return;
+      }
+      if (typeof InterstitialAd?.createForAdRequest !== 'function') {
+        console.log('[Ads] InterstitialAd.createForAdRequest is not callable');
+        return;
+      }
+
+      const instance = mobileAdsFactory();
+      mobileAdsInstance = instance;
+
+      if (typeof instance?.setRequestConfiguration !== 'function' || typeof instance?.initialize !== 'function') {
+        console.log('[Ads] MobileAds instance methods unavailable');
+        return;
+      }
+
       console.log('[Ads] SDK imported successfully');
     } catch (importErr: any) {
       console.log('[Ads] SDK unavailable (Expo Go / not installed):', importErr?.message);
       return;
     }
 
-    // Step 3: Get SDK instance and configure
-    const instance = typeof MobileAds === 'function' ? MobileAds() : MobileAds;
-    mobileAdsInstance = instance;
+    const instance = mobileAdsInstance;
 
     await instance.setRequestConfiguration({
       maxAdContentRating: 'G',
@@ -133,6 +145,13 @@ export async function showInterstitialAd(): Promise<void> {
   }
 
   try {
+    if (typeof interstitialAd.show !== 'function') {
+      console.log('[Ads] Interstitial show() is not callable');
+      interstitialLoaded = false;
+      void loadInterstitialAd();
+      return;
+    }
+
     console.log('[Ads] Showing interstitial...');
     await interstitialAd.show();
     lastInterstitialTime = now;

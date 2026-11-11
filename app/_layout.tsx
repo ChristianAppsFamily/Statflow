@@ -9,7 +9,6 @@ import { AppProvider } from "@/contexts/AppContext";
 import { PlayerProvider } from "@/contexts/PlayerContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { initializeAds, showInterstitialAd, hasInterstitialCooldownPassed } from "@/services/ads";
-import { requestTrackingPermission } from "@/services/tracking";
 import ATTPermissionScreen from "@/components/ATTPermissionScreen";
 import { Colors } from "@/constants/colors";
 
@@ -36,14 +35,14 @@ async function trackAppOpenAndMaybeShowAd(): Promise<void> {
     count += 1;
     await AsyncStorage.setItem(APP_OPENS_LIFETIME_KEY, count.toString());
     console.log("[App] Lifetime open count:", count);
-    
+
     // Mark first open as completed
     if (isFirstOpenEver) {
       await AsyncStorage.setItem(FIRST_OPEN_COMPLETED_KEY, 'true');
       console.log("[App] First open ever - not showing interstitial");
-      return;
+      return count;
     }
-    
+
     // Show interstitial every 7th open (7, 14, 21, 28, etc.)
     if (count % 7 === 0) {
       // Check cooldown before showing
@@ -54,8 +53,11 @@ async function trackAppOpenAndMaybeShowAd(): Promise<void> {
       // Small delay so the first frame renders before ad appears
       setTimeout(() => void showInterstitialAd(), 1500);
     }
+
+    return count;
   } catch (e) {
     console.log("[App] Error tracking app opens:", e);
+    return null;
   }
 }
 
@@ -97,7 +99,8 @@ export default function RootLayout() {
     
     // Check if ATT was already completed
     AsyncStorage.getItem(ATT_COMPLETED_KEY).then((value) => {
-      if (value === 'true') {
+      // ATT pre-prompt is iOS-only; other platforms can initialize ads and tracking immediately
+      if (value === 'true' || Platform.OS !== 'ios') {
         setAttCompleted(true);
       } else {
         setAttCompleted(false);

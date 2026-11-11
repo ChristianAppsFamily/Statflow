@@ -10,6 +10,7 @@ import { Colors } from '@/constants/colors';
 import { SPORTS_CONFIG } from '@/constants/sports';
 import { Session } from '@/types';
 import BannerAdComponent from '@/components/BannerAd';
+import { formatSessionDate } from '@/utils/sessionDate';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -25,13 +26,11 @@ export default function HomeScreen() {
     return filtered.slice(0, 3);
   }, [sessions, activePlayerId]);
 
-  const formatDate = (isoDate: string) => {
-    const date = new Date(isoDate);
-    return date.toLocaleDateString('en-US', {
+  const formatDate = (isoDate: string) =>
+    formatSessionDate(isoDate, {
       month: 'short',
       day: 'numeric',
     });
-  };
 
   const getTopStats = (session: Session) => {
     const config = SPORTS_CONFIG[session.sport];

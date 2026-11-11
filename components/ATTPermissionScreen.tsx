@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Image } from 'react-native';
 import { requestTrackingPermissionsAsync, getTrackingPermissionsAsync } from 'expo-tracking-transparency';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/colors';
@@ -66,16 +66,11 @@ export default function ATTPermissionScreen({ onComplete }: ATTPermissionScreenP
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.icon}>📊</Text>
-        <Text style={styles.title}>Help Keep StatFlow Free</Text>
+        <Image source={require('@/assets/images/statflow-icon.png')} style={styles.icon} />
+        <Text style={styles.title}>App Tracking Transparency</Text>
         <Text style={styles.description}>
-          StatFlow uses personalized ads to support the app and keep it free for everyone. 
-          Your data helps us show relevant ads and improve your sports tracking experience.
+          StatFlow uses personalized ads to support the app. Allowing tracking helps us show relevant ads and improve your experience.
         </Text>
-        <Text style={styles.subtitle}>
-          We value your privacy. You can change this anytime in Settings.
-        </Text>
-        
         <TouchableOpacity 
           style={styles.allowButton}
           onPress={handleRequestPermission}
@@ -107,8 +102,10 @@ const styles = StyleSheet.create({
     maxWidth: 400,
   },
   icon: {
-    fontSize: 64,
+    width: 120,
+    height: 120,
     marginBottom: 24,
+    borderRadius: 24,
   },
   title: {
     fontSize: 28,
@@ -126,7 +123,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: Colors.textMuted,
+    color: Colors.textSecondary,
     textAlign: 'center',
     marginBottom: 32,
   },
