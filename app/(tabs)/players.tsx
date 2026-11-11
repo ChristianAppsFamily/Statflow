@@ -24,9 +24,11 @@ import {
   Users,
   Shield,
   Camera,
+  ClipboardPlus,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
 import { persistLocalFile } from '@/utils/mediaPersist';
 import { usePlayers } from '@/contexts/PlayerContext';
 import { useApp } from '@/contexts/AppContext';
@@ -59,6 +61,7 @@ function getInitials(name: string): string {
 
 export default function PlayersScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { players, activePlayerId, activePlayer, addPlayer, updatePlayer, deletePlayer, setActivePlayer } = usePlayers();
   const { settings } = useApp();
   const [modalVisible, setModalVisible] = useState(false);
@@ -89,6 +92,25 @@ export default function PlayersScreen() {
     resetForm();
     setModalVisible(true);
   }, [resetForm]);
+
+  const startNewGame = useCallback(() => {
+    if (players.length === 0) {
+      Alert.alert('Add a Player First', 'Create a player profile before starting a new game.');
+      return;
+    }
+    if (settings.hapticsEnabled && Platform.OS !== 'web') {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    router.push('/add-stats');
+  }, [players.length, settings.hapticsEnabled, router]);
+
+  const selectPrimarySport = useCallback((sport: Sport) => {
+    Keyboard.dismiss();
+    setPrimarySport(sport);
+    if (settings.hapticsEnabled && Platform.OS !== 'web') {
+      void Haptics.selectionAsync();
+    }
+  }, [settings.hapticsEnabled]);
 
   const openEditModal = useCallback((player: PlayerProfile) => {
     setEditingPlayer(player);
@@ -246,13 +268,24 @@ export default function PlayersScreen() {
                 : `${players.length} player${players.length !== 1 ? 's' : ''}`}
             </Text>
           </View>
-          <TouchableOpacity
-            style={styles.addBtn}
-            onPress={openCreateModal}
-            testID="add-player-button"
-          >
-            <UserPlus size={20} color={Colors.navy} />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.addBtn}
+              onPress={startNewGame}
+              testID="start-new-game-button"
+              accessibilityLabel="Start a new game"
+            >
+              <ClipboardPlus size={20} color={Colors.navy} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.addBtn}
+              onPress={openCreateModal}
+              testID="add-player-button"
+              accessibilityLabel="Add player"
+            >
+              <UserPlus size={20} color={Colors.navy} />
+            </TouchableOpacity>
+          </View>
         </View>
 
         {activePlayer && (
@@ -415,7 +448,8 @@ export default function PlayersScreen() {
           <ScrollView
             style={styles.modalContent}
             contentContainerStyle={styles.modalContentContainer}
-            keyboardShouldPersistTaps="handled"
+            keyboardShouldPersistTaps="always"
+            keyboardDismissMode="on-drag"
           >
             <View style={styles.photoSection}>
               <TouchableOpacity
@@ -520,28 +554,33 @@ export default function PlayersScreen() {
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 style={styles.sportScroll}
+                contentContainerStyle={styles.sportScrollContent}
+                keyboardShouldPersistTaps="always"
+                nestedScrollEnabled
               >
-                {SPORT_OPTIONS.map((sport) => (
-                  <TouchableOpacity
-                    key={sport.value}
-                    style={[
-                      styles.sportChip,
-                      primarySport === sport.value && styles.sportChipActive,
-                    ]}
-                    onPress={() =>
-                      setPrimarySport(primarySport === sport.value ? undefined : sport.value)
-                    }
-                  >
-                    <Text
+                {SPORT_OPTIONS.map((sport) => {
+                  const selected = primarySport === sport.value;
+                  return (
+                    <TouchableOpacity
+                      key={sport.value}
                       style={[
-                        styles.sportChipText,
-                        primarySport === sport.value && styles.sportChipTextActive,
+                        styles.sportChip,
+                        selected && styles.sportChipActive,
                       ]}
+                      onPress={() => selectPrimarySport(sport.value)}
+                      activeOpacity={0.7}
                     >
-                      {sport.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Text
+                        style={[
+                          styles.sportChipText,
+                          selected && styles.sportChipTextActive,
+                        ]}
+                      >
+                        {sport.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </ScrollView>
             </View>
 
@@ -573,6 +612,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: 16,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   headerTitle: {
     fontSize: 32,
@@ -834,7 +878,12 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   sportScroll: {
+    flexGrow: 0,
+  },
+  sportScrollContent: {
     flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 2,
   },
   sportChip: {
     paddingHorizontal: 14,
