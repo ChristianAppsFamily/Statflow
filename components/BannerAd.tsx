@@ -6,13 +6,12 @@ import { isAdsReady, isTrackingGranted } from '@/services/ads';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 
 interface BannerAdProps {
-  /** Where to render the banner and which safe-area inset to apply */
   position?: 'top' | 'bottom';
   size?: 'banner' | 'largeBanner' | 'mediumRectangle';
 }
 
-const RETRY_INTERVAL_MS = 500;  // check every 500ms
-const MAX_RETRIES = 20;          // give up after 10s total
+const RETRY_INTERVAL_MS = 500;
+const MAX_RETRIES = 20;
 
 export default function BannerAdComponent({
   position = 'bottom',
@@ -28,15 +27,19 @@ export default function BannerAdComponent({
   useEffect(() => {
     if (Platform.OS === 'web') return;
 
+    let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     function tryLoad() {
+      if (cancelled) return;
+
       if (!isAdsReady()) {
-        // Ads SDK not yet initialized — retry after a short delay
         if (retryCount.current < MAX_RETRIES) {
           retryCount.current += 1;
-          console.log(`[BannerAd] Ads not ready, retry ${retryCount.current}/${MAX_RETRIES}...`);
-          setTimeout(tryLoad, RETRY_INTERVAL_MS);
-        } else {
-          console.log('[BannerAd] Max retries reached, giving up');
+          if (__DEV__) {
+            console.log(`[BannerAd] Ads not ready, retry ${retryCount.current}/${MAX_RETRIES}...`);
+          }
+          timeoutId = setTimeout(tryLoad, RETRY_INTERVAL_MS);
         }
         return;
       }
@@ -46,7 +49,6 @@ export default function BannerAdComponent({
         const { BannerAd: NativeBannerAd, BannerAdSize } = gma;
 
         if (typeof NativeBannerAd !== 'function' && typeof NativeBannerAd !== 'object') {
-          console.log('[BannerAd] BannerAd export is not a valid component');
           return;
         }
 
@@ -56,15 +58,20 @@ export default function BannerAdComponent({
           mediumRectangle: BannerAdSize.MEDIUM_RECTANGLE,
         };
 
-        console.log('[BannerAd] Ads ready, loading banner...');
+        if (cancelled) return;
         setBannerSize(sizeMap[size] || BannerAdSize.ADAPTIVE_BANNER);
         setAdComponent(() => NativeBannerAd);
       } catch (e) {
-        console.log('[BannerAd] react-native-google-mobile-ads not available:', e);
+        if (__DEV__) console.log('[BannerAd] react-native-google-mobile-ads not available:', e);
       }
     }
 
     tryLoad();
+
+    return () => {
+      cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [size]);
 
   if (isAdFree || Platform.OS === 'web' || !AdComponent || !bannerSize) {
@@ -90,7 +97,7 @@ export default function BannerAdComponent({
           requestNonPersonalizedAdsOnly: !isTrackingGranted(),
         }}
         onAdFailedToLoad={(error: Error) => {
-          console.log('[BannerAd] Failed to load:', error);
+          if (__DEV__) console.log('[BannerAd] Failed to load:', error);
         }}
       />
     </View>

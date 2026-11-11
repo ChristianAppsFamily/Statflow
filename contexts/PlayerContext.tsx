@@ -9,6 +9,10 @@ import { checkAndShowPlayerThresholdInterstitial } from '@/services/ads';
 const PLAYERS_KEY = 'statflow_players';
 const ACTIVE_PLAYER_KEY = 'statflow_active_player';
 
+function log(...args: unknown[]) {
+  if (__DEV__) console.log(...args);
+}
+
 export const [PlayerProvider, usePlayers] = createContextHook(() => {
   const queryClient = useQueryClient();
 
@@ -52,46 +56,48 @@ export const [PlayerProvider, usePlayers] = createContextHook(() => {
     },
   });
 
+  const getPlayers = useCallback((): PlayerProfile[] => {
+    return (queryClient.getQueryData(['players']) as PlayerProfile[] | undefined) || [];
+  }, [queryClient]);
+
   const addPlayer = useCallback((player: PlayerProfile) => {
-    console.log('[PlayerContext] Adding player:', player.name);
-    const current = playersQuery.data || [];
+    log('[PlayerContext] Adding player:', player.name);
+    const current = getPlayers();
     const updated = [player, ...current];
+    queryClient.setQueryData(['players'], updated);
     savePlayersMutation.mutate(updated);
     if (current.length === 0) {
       saveActivePlayerIdMutation.mutate(player.id);
     }
 
-    // Check and show player threshold interstitial (4th+ player, one-time)
-    try {
-      void checkAndShowPlayerThresholdInterstitial(updated.length);
-    } catch (e) {
-      console.log('[PlayerContext] Ad trigger error:', e);
-    }
-  }, [playersQuery.data, savePlayersMutation, saveActivePlayerIdMutation]);
+    void checkAndShowPlayerThresholdInterstitial(updated.length);
+  }, [getPlayers, queryClient, savePlayersMutation, saveActivePlayerIdMutation]);
 
   const updatePlayer = useCallback((playerId: string, updates: Partial<PlayerProfile>) => {
-    console.log('[PlayerContext] Updating player:', playerId);
-    const current = playersQuery.data || [];
-    const updated = current.map((p: PlayerProfile) =>
+    log('[PlayerContext] Updating player:', playerId);
+    const updated = getPlayers().map((p) =>
       p.id === playerId ? { ...p, ...updates } : p
     );
+    queryClient.setQueryData(['players'], updated);
     savePlayersMutation.mutate(updated);
-  }, [playersQuery.data, savePlayersMutation]);
+  }, [getPlayers, queryClient, savePlayersMutation]);
 
   const deletePlayer = useCallback((playerId: string) => {
-    console.log('[PlayerContext] Deleting player:', playerId);
-    const current = playersQuery.data || [];
-    const currentActiveId = activePlayerIdQuery.data || null;
-    const updated = current.filter((p: PlayerProfile) => p.id !== playerId);
+    log('[PlayerContext] Deleting player:', playerId);
+    const current = getPlayers();
+    const currentActiveId =
+      (queryClient.getQueryData(['activePlayerId']) as string | null | undefined) || null;
+    const updated = current.filter((p) => p.id !== playerId);
+    queryClient.setQueryData(['players'], updated);
     savePlayersMutation.mutate(updated);
     if (currentActiveId === playerId) {
       const nextPlayer = updated.length > 0 ? updated[0].id : null;
       saveActivePlayerIdMutation.mutate(nextPlayer);
     }
-  }, [playersQuery.data, activePlayerIdQuery.data, savePlayersMutation, saveActivePlayerIdMutation]);
+  }, [getPlayers, queryClient, savePlayersMutation, saveActivePlayerIdMutation]);
 
   const setActivePlayer = useCallback((playerId: string | null) => {
-    console.log('[PlayerContext] Setting active player:', playerId);
+    log('[PlayerContext] Setting active player:', playerId);
     saveActivePlayerIdMutation.mutate(playerId);
   }, [saveActivePlayerIdMutation]);
 

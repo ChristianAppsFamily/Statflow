@@ -24,6 +24,7 @@ import { Highlight, Sport } from '@/types';
 import { SPORTS_CONFIG } from '@/constants/sports';
 import { Colors } from '@/constants/colors';
 import { formatSessionDate } from '@/utils/sessionDate';
+import { persistLocalFile } from '@/utils/mediaPersist';
 
 type AddMode = 'none' | 'link' | 'file';
 
@@ -149,11 +150,12 @@ export default function HighlightsScreen() {
         return;
       }
 
+      const localUri = await persistLocalFile(asset.uri, 'highlights', 'video');
       const newHighlight: Highlight = {
         id: Date.now().toString(),
         title: title.trim(),
         type: 'file',
-        localUri: asset.uri,
+        localUri,
         createdAt: new Date().toISOString(),
         sport: selectedSport,
         notes: notes.trim() || undefined,
@@ -211,14 +213,6 @@ export default function HighlightsScreen() {
     setVideoModalVisible(false);
     setPlayingUri(null);
   };
-
-  const formatDate = (dateString: string) =>
-    formatSessionDate(dateString, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-
 
   const getSessionLabel = (sessionId?: string) => {
     if (!sessionId) return null;
@@ -423,7 +417,13 @@ export default function HighlightsScreen() {
                   <View style={styles.highlightContent}>
                     <Text style={styles.highlightTitle}>{highlight.title}</Text>
                     <View style={styles.highlightMeta}>
-                      <Text style={styles.highlightDate}>{formatDate(highlight.createdAt)}</Text>
+                      <Text style={styles.highlightDate}>
+                        {formatSessionDate(highlight.createdAt, {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </Text>
                       {highlight.sport && SPORTS_CONFIG[highlight.sport] && (
                         <Text style={styles.sportIcon}>{SPORTS_CONFIG[highlight.sport].icon}</Text>
                       )}

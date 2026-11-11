@@ -2,17 +2,13 @@ import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DAILY_VERSES } from '@/constants/verses';
 import { Verse } from '@/types';
+import { getLocalDateString } from '@/utils/sessionDate';
 
 const DAILY_VERSE_KEY = 'statflow_daily_verse';
 
 interface StoredDailyVerse {
   date: string;
   verseIndex: number;
-}
-
-function getTodayString(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 }
 
 function seededIndex(dateStr: string): number {
@@ -31,7 +27,7 @@ export function useDailyVerse(): Verse | null {
 
     async function load() {
       try {
-        const today = getTodayString();
+        const today = getLocalDateString();
         const raw = await AsyncStorage.getItem(DAILY_VERSE_KEY);
 
         if (raw) {

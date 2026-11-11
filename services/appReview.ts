@@ -13,6 +13,10 @@ const STAT_SAVED_LIFETIME_KEY = 'statflow_stats_saved_lifetime';
 const STAT_INTERVAL = 4;
 const PROMPT_DELAY_MS = 1500;
 
+function log(...args: unknown[]) {
+  if (__DEV__) console.log(...args);
+}
+
 /**
  * Call after each saved game/stat session.
  * Prompts on the 4th save, then every 4th (8, 12, 16…) until the user rates.
@@ -30,7 +34,7 @@ export async function checkReviewPromptAfterStatSaved(): Promise<void> {
 
     count += 1;
     await AsyncStorage.setItem(STAT_SAVED_LIFETIME_KEY, count.toString());
-    console.log('[AppReview] Lifetime stats saved:', count);
+    log('[AppReview] Lifetime stats saved:', count);
 
     if (count < STAT_INTERVAL || count % STAT_INTERVAL !== 0) return;
 
@@ -40,7 +44,7 @@ export async function checkReviewPromptAfterStatSaved(): Promise<void> {
       }, PROMPT_DELAY_MS);
     });
   } catch (e) {
-    console.log('[AppReview] Error checking stat save count:', e);
+    log('[AppReview] Error checking stat save count:', e);
   }
 }
 
@@ -49,7 +53,7 @@ async function showRateAppAlert(statCount: number): Promise<void> {
     const completed = await AsyncStorage.getItem(REVIEW_COMPLETED_KEY);
     if (completed === 'true') return;
 
-    console.log('[AppReview] Showing rate prompt after stat save #', statCount);
+    log('[AppReview] Showing rate prompt after stat save #', statCount);
 
     Alert.alert(
       'Enjoying StatFlow?',
@@ -64,7 +68,7 @@ async function showRateAppAlert(statCount: number): Promise<void> {
       { cancelable: true }
     );
   } catch (e) {
-    console.log('[AppReview] Error showing review prompt:', e);
+    log('[AppReview] Error showing review prompt:', e);
   }
 }
 
@@ -73,26 +77,29 @@ export async function openAppStoreReview(): Promise<void> {
   try {
     const reviewUrl = getWriteReviewUrl();
 
-    if (reviewUrl) {
-      const canOpen = await Linking.canOpenURL(reviewUrl);
-      if (canOpen) {
-        await Linking.openURL(reviewUrl);
-      } else {
-        console.log('[AppReview] Cannot open store URL:', reviewUrl);
-      }
-    } else {
-      console.log(
-        '[AppReview] No ios.appStoreUrl in app.json — add your App Store link to enable ratings'
-      );
+    if (!reviewUrl) {
+      log('[AppReview] No ios.appStoreUrl in app.json');
       Alert.alert(
         'Thank you!',
         'Please search for StatFlow in the App Store to leave a rating.'
       );
+      return;
     }
 
+    const canOpen = await Linking.canOpenURL(reviewUrl);
+    if (!canOpen) {
+      log('[AppReview] Cannot open store URL:', reviewUrl);
+      Alert.alert(
+        'Unable to open App Store',
+        'Please search for StatFlow in the App Store to leave a rating.'
+      );
+      return;
+    }
+
+    await Linking.openURL(reviewUrl);
     await AsyncStorage.setItem(REVIEW_COMPLETED_KEY, 'true');
-    console.log('[AppReview] Marked review flow as completed');
+    log('[AppReview] Marked review flow as completed');
   } catch (e) {
-    console.log('[AppReview] Failed to open store for review:', e);
+    log('[AppReview] Failed to open store for review:', e);
   }
 }

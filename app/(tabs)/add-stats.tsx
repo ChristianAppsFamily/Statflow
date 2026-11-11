@@ -41,7 +41,7 @@ async function incrementDailyGames(): Promise<number> {
 
 export default function AddStatsScreen() {
   const router = useRouter();
-  const { addSession, settings, addHighlight } = useApp();
+  const { addSession, settings, addHighlights } = useApp();
   const { activePlayerId, players } = usePlayers();
   const insets = useSafeAreaInsets();
   
@@ -158,8 +158,8 @@ export default function AddStatsScreen() {
 
     addSession(session);
 
-    gameHighlights.forEach((hl, idx) => {
-      const highlight: Highlight = {
+    if (gameHighlights.length > 0) {
+      const highlightsToAdd: Highlight[] = gameHighlights.map((hl, idx) => ({
         id: `${sessionId}_hl_${idx}`,
         title: hl.title,
         type: 'link',
@@ -169,9 +169,9 @@ export default function AddStatsScreen() {
         notes: hl.notes || undefined,
         sessionId,
         playerId: activePlayerId || undefined,
-      };
-      addHighlight(highlight);
-    });
+      }));
+      addHighlights(highlightsToAdd);
+    }
 
     if (settings.hapticsEnabled && Platform.OS !== 'web') {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

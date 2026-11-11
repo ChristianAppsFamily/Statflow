@@ -39,9 +39,6 @@ export default function SettingsScreen() {
 
   const handleSupportUpgrade = async () => {
     if (isAdFree) return;
-    console.log('[Settings] Support upgrade tapped');
-    
-    // Check if product is available
     if (!lifetimePackage) {
       Alert.alert(
         'Not Available',
@@ -59,10 +56,9 @@ export default function SettingsScreen() {
     } catch (error: unknown) {
       const err = error as { userCancelled?: boolean; message?: string; code?: string };
       if (err.userCancelled) {
-        console.log('[Settings] Purchase cancelled by user');
         return;
       }
-      console.log('[Settings] Purchase error:', err.message, err.code);
+      if (__DEV__) console.log('[Settings] Purchase error:', err.message, err.code);
       Alert.alert(
         'Purchase Failed',
         err.message || 'Something went wrong. Please try again.'
@@ -71,7 +67,6 @@ export default function SettingsScreen() {
   };
 
   const handleRestorePurchases = async () => {
-    console.log('[Settings] Restore purchases tapped');
     try {
       const info = await restorePurchases();
       const hasNoAds = 'no_ads' in (info.entitlements.active ?? {});
@@ -82,7 +77,7 @@ export default function SettingsScreen() {
       }
     } catch (error: unknown) {
       const err = error as { message?: string };
-      console.log('[Settings] Restore error:', err.message);
+      if (__DEV__) console.log('[Settings] Restore error:', err.message);
       Alert.alert(
         'Restore Failed',
         'Unable to restore purchases. Please try again later.'

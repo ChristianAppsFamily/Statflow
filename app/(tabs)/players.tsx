@@ -27,7 +27,7 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
-import { File, Paths, Directory } from 'expo-file-system';
+import { persistLocalFile } from '@/utils/mediaPersist';
 import { usePlayers } from '@/contexts/PlayerContext';
 import { useApp } from '@/contexts/AppContext';
 import { PlayerProfile, Sport } from '@/types';
@@ -145,27 +145,6 @@ export default function PlayersScreen() {
     resetForm();
   }, [name, age, grade, height, jerseyNumber, primarySport, teamName, avatarUri, editingPlayer, addPlayer, updatePlayer, settings.hapticsEnabled, resetForm]);
 
-  const saveImagePersistently = useCallback(async (uri: string): Promise<string> => {
-    if (Platform.OS === 'web') {
-      return uri;
-    }
-    try {
-      const avatarsDir = new Directory(Paths.document, 'avatars');
-      if (!avatarsDir.exists) {
-        avatarsDir.create({ intermediates: true });
-      }
-      const fileName = `avatar_${Date.now()}.jpg`;
-      const destFile = new File(avatarsDir, fileName);
-      const sourceFile = new File(uri);
-      sourceFile.copy(destFile);
-      console.log('[Players] Image saved persistently:', destFile.uri);
-      return destFile.uri;
-    } catch (error) {
-      console.error('[Players] Error saving image persistently:', error);
-      return uri;
-    }
-  }, []);
-
   const pickImage = useCallback(async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -176,15 +155,14 @@ export default function PlayersScreen() {
       });
 
       if (!result.canceled && result.assets[0]) {
-        console.log('[Players] Image picked:', result.assets[0].uri);
-        const persistentUri = await saveImagePersistently(result.assets[0].uri);
+        const persistentUri = await persistLocalFile(result.assets[0].uri, 'avatars', 'avatar');
         setAvatarUri(persistentUri);
       }
     } catch (error) {
-      console.error('[Players] Image picker error:', error);
+      if (__DEV__) console.error('[Players] Image picker error:', error);
       Alert.alert('Error', 'Could not pick image. Please try again.');
     }
-  }, [saveImagePersistently]);
+  }, []);
 
   const takePhoto = useCallback(async () => {
     try {
@@ -200,15 +178,14 @@ export default function PlayersScreen() {
       });
 
       if (!result.canceled && result.assets[0]) {
-        console.log('[Players] Photo taken:', result.assets[0].uri);
-        const persistentUri = await saveImagePersistently(result.assets[0].uri);
+        const persistentUri = await persistLocalFile(result.assets[0].uri, 'avatars', 'avatar');
         setAvatarUri(persistentUri);
       }
     } catch (error) {
-      console.error('[Players] Camera error:', error);
+      if (__DEV__) console.error('[Players] Camera error:', error);
       Alert.alert('Error', 'Could not take photo. Please try again.');
     }
-  }, [saveImagePersistently]);
+  }, []);
 
   const handlePickPhoto = useCallback(() => {
     if (Platform.OS === 'web') {

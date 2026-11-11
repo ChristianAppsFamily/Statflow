@@ -73,36 +73,43 @@ export const [AppProvider, useApp] = createContextHook(() => {
     },
   });
 
+  const getSessions = useCallback((): Session[] => {
+    return (queryClient.getQueryData(['sessions']) as Session[] | undefined) || [];
+  }, [queryClient]);
+
+  const getHighlights = useCallback((): Highlight[] => {
+    return (queryClient.getQueryData(['highlights']) as Highlight[] | undefined) || [];
+  }, [queryClient]);
+
   const addSession = useCallback((session: Session) => {
-    const sessions = sessionsQuery.data || [];
-    const updated = [session, ...sessions];
+    const updated = [session, ...getSessions()];
+    queryClient.setQueryData(['sessions'], updated);
     saveSessionsMutation.mutate(updated);
-    
-    // Track unique sports and check for sports threshold interstitial (3rd unique sport, one-time)
-    try {
-      void addTrackedSport(session.sport).then((trackedSports) => {
-        void checkAndShowSportsThresholdInterstitial(trackedSports);
-      });
-    } catch (e) {
-      console.log('[AppContext] Sports tracking error:', e);
-    }
+
+    void addTrackedSport(session.sport).then((trackedSports) => {
+      void checkAndShowSportsThresholdInterstitial(trackedSports);
+    });
 
     void checkReviewPromptAfterStatSaved();
-  }, [sessionsQuery.data, saveSessionsMutation]);
+  }, [getSessions, queryClient, saveSessionsMutation]);
 
   const updateSession = useCallback((sessionId: string, updates: Partial<Session>) => {
-    const sessions = sessionsQuery.data || [];
-    const updated = sessions.map((s: Session) =>
+    const updated = getSessions().map((s) =>
       s.id === sessionId ? { ...s, ...updates } : s
     );
+    queryClient.setQueryData(['sessions'], updated);
     saveSessionsMutation.mutate(updated);
-  }, [sessionsQuery.data, saveSessionsMutation]);
+  }, [getSessions, queryClient, saveSessionsMutation]);
 
   const deleteSession = useCallback((sessionId: string) => {
-    const sessions = sessionsQuery.data || [];
-    const updated = sessions.filter((s: Session) => s.id !== sessionId);
-    saveSessionsMutation.mutate(updated);
-  }, [sessionsQuery.data, saveSessionsMutation]);
+    const updatedSessions = getSessions().filter((s) => s.id !== sessionId);
+    queryClient.setQueryData(['sessions'], updatedSessions);
+    saveSessionsMutation.mutate(updatedSessions);
+
+    const updatedHighlights = getHighlights().filter((h) => h.sessionId !== sessionId);
+    queryClient.setQueryData(['highlights'], updatedHighlights);
+    saveHighlightsMutation.mutate(updatedHighlights);
+  }, [getSessions, getHighlights, queryClient, saveSessionsMutation, saveHighlightsMutation]);
 
   const resetAllData = useCallback(async () => {
     await AsyncStorage.multiRemove([SESSIONS_KEY, SETTINGS_KEY, HIGHLIGHTS_KEY]);
@@ -112,29 +119,39 @@ export const [AppProvider, useApp] = createContextHook(() => {
   }, [queryClient]);
 
   const updateSettings = useCallback((updates: Partial<AppSettings>) => {
-    const current = settingsQuery.data || defaultSettings;
-    saveSettingsMutation.mutate({ ...current, ...updates });
-  }, [settingsQuery.data, saveSettingsMutation]);
+    const current =
+      (queryClient.getQueryData(['settings']) as AppSettings | undefined) || defaultSettings;
+    const next = { ...current, ...updates };
+    queryClient.setQueryData(['settings'], next);
+    saveSettingsMutation.mutate(next);
+  }, [queryClient, saveSettingsMutation]);
 
   const addHighlight = useCallback((highlight: Highlight) => {
-    const highlights = highlightsQuery.data || [];
-    const updated = [highlight, ...highlights];
+    const updated = [highlight, ...getHighlights()];
+    queryClient.setQueryData(['highlights'], updated);
     saveHighlightsMutation.mutate(updated);
-  }, [highlightsQuery.data, saveHighlightsMutation]);
+  }, [getHighlights, queryClient, saveHighlightsMutation]);
+
+  const addHighlights = useCallback((newHighlights: Highlight[]) => {
+    if (newHighlights.length === 0) return;
+    const updated = [...newHighlights, ...getHighlights()];
+    queryClient.setQueryData(['highlights'], updated);
+    saveHighlightsMutation.mutate(updated);
+  }, [getHighlights, queryClient, saveHighlightsMutation]);
 
   const updateHighlight = useCallback((highlightId: string, updates: Partial<Highlight>) => {
-    const highlights = highlightsQuery.data || [];
-    const updated = highlights.map((h: Highlight) =>
+    const updated = getHighlights().map((h) =>
       h.id === highlightId ? { ...h, ...updates } : h
     );
+    queryClient.setQueryData(['highlights'], updated);
     saveHighlightsMutation.mutate(updated);
-  }, [highlightsQuery.data, saveHighlightsMutation]);
+  }, [getHighlights, queryClient, saveHighlightsMutation]);
 
   const deleteHighlight = useCallback((highlightId: string) => {
-    const highlights = highlightsQuery.data || [];
-    const updated = highlights.filter((h: Highlight) => h.id !== highlightId);
+    const updated = getHighlights().filter((h) => h.id !== highlightId);
+    queryClient.setQueryData(['highlights'], updated);
     saveHighlightsMutation.mutate(updated);
-  }, [highlightsQuery.data, saveHighlightsMutation]);
+  }, [getHighlights, queryClient, saveHighlightsMutation]);
 
   return useMemo(() => ({
     sessions: (sessionsQuery.data || []) as Session[],
@@ -147,6 +164,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     resetAllData,
     updateSettings,
     addHighlight,
+    addHighlights,
     updateHighlight,
     deleteHighlight,
   }), [
@@ -162,6 +180,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     resetAllData,
     updateSettings,
     addHighlight,
+    addHighlights,
     updateHighlight,
     deleteHighlight,
   ]);

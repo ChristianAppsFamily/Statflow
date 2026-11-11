@@ -26,6 +26,7 @@ import { SPORTS_CONFIG } from '@/constants/sports';
 import { Session, Highlight } from '@/types';
 import { Colors } from '@/constants/colors';
 import { formatSessionDate } from '@/utils/sessionDate';
+import { persistLocalFile } from '@/utils/mediaPersist';
 
 type HighlightAddMode = 'none' | 'link' | 'file';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -56,23 +57,39 @@ export default function SessionDetailScreen() {
     return highlights.filter((h) => h.sessionId === sessionId);
   }, [highlights, sessionId]);
 
-  if (!session) {
+  const currentSession = isEditing && editedSession ? editedSession : session;
+  const sportConfig = session ? SPORTS_CONFIG[session.sport] : null;
+
+  const allStats = useMemo(() => {
+    if (!session || !sportConfig || !currentSession) return [];
+    const configStats = sportConfig.stats.map((stat) => ({
+      key: stat.key,
+      label: stat.label,
+      shortLabel: stat.shortLabel,
+    }));
+    const configKeys = new Set(configStats.map((s) => s.key));
+    const customStats = Object.keys(currentSession.stats)
+      .filter((key) => !configKeys.has(key))
+      .map((key) => {
+        const cleanLabel = key.startsWith('custom_')
+          ? key.replace(/^custom_/, '').replace(/_\d+$/, '').replace(/_/g, ' ')
+          : key;
+        return {
+          key,
+          label: cleanLabel.charAt(0).toUpperCase() + cleanLabel.slice(1),
+          shortLabel: cleanLabel.toUpperCase().slice(0, 4),
+        };
+      });
+    return [...configStats, ...customStats];
+  }, [session, sportConfig, currentSession]);
+
+  if (!session || !sportConfig || !currentSession) {
     return (
       <View style={styles.container}>
         <Text style={styles.errorText}>Game not found</Text>
       </View>
     );
   }
-
-  const sportConfig = SPORTS_CONFIG[session.sport];
-
-  const formatDate = (isoDate: string) =>
-    formatSessionDate(isoDate, {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
 
   const handleEdit = () => {
     setEditedSession({ ...session });
@@ -131,8 +148,6 @@ export default function SessionDetailScreen() {
     });
   };
 
-  const currentSession = isEditing && editedSession ? editedSession : session;
-
   const getPlayerName = () => {
     const pid = session.playerId || activePlayerId;
     if (!pid) return null;
@@ -148,7 +163,14 @@ export default function SessionDetailScreen() {
       lines.push(`🏅 Player: ${playerName}`);
     }
     lines.push(`🏟️ Sport: ${sportConfig.name}`);
-    lines.push(`📅 ${formatDate(session.date)}`);
+    lines.push(
+      `📅 ${formatSessionDate(session.date, {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      })}`
+    );
     if (session.opponent) {
       lines.push(`🆚 ${session.opponent}`);
     }
@@ -312,11 +334,12 @@ export default function SessionDetailScreen() {
 
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
+      const localUri = await persistLocalFile(asset.uri, 'highlights', 'video');
       const newHighlight: Highlight = {
         id: Date.now().toString(),
         title: hlTitle.trim(),
         type: 'file',
-        localUri: asset.uri,
+        localUri,
         createdAt: new Date().toISOString(),
         sport: session.sport,
         notes: hlNotes.trim() || undefined,
@@ -371,28 +394,6 @@ export default function SessionDetailScreen() {
     setPlayingUri(null);
   };
 
-  const allStats = useMemo(() => {
-    const configStats = sportConfig.stats.map((stat) => ({
-      key: stat.key,
-      label: stat.label,
-      shortLabel: stat.shortLabel,
-    }));
-    const configKeys = new Set(configStats.map((s) => s.key));
-    const customStats = Object.keys(currentSession.stats)
-      .filter((key) => !configKeys.has(key))
-      .map((key) => {
-        const cleanLabel = key.startsWith('custom_')
-          ? key.replace(/^custom_/, '').replace(/_\d+$/, '').replace(/_/g, ' ')
-          : key;
-        return {
-          key,
-          label: cleanLabel.charAt(0).toUpperCase() + cleanLabel.slice(1),
-          shortLabel: cleanLabel.toUpperCase().slice(0, 4),
-        };
-      });
-    return [...configStats, ...customStats];
-  }, [sportConfig.stats, currentSession.stats]);
-
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -409,7 +410,14 @@ export default function SessionDetailScreen() {
         <Text style={styles.sportTitle}>
           {sportConfig.icon} {sportConfig.name}
         </Text>
-        <Text style={styles.date}>{formatDate(session.date)}</Text>
+        <Text style={styles.date}>
+          {formatSessionDate(session.date, {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+          })}
+        </Text>
         {(currentSession.outcome || currentSession.teamScore !== undefined) && (
           <View style={styles.gameResultRow}>
             {currentSession.outcome && (
@@ -437,7 +445,7 @@ export default function SessionDetailScreen() {
         )}
       </View>
 
-      {currentSession.opponent && (
+      {(isEditing || currentSession.opponent) && (
         <View style={styles.opponentCard}>
           <Text style={styles.opponentLabel}>OPPONENT</Text>
           {isEditing ? (
@@ -451,6 +459,9 @@ export default function SessionDetailScreen() {
               }
               placeholder="Opponent"
               placeholderTextColor={Colors.textSecondary}
+              returnKeyType="done"
+              blurOnSubmit
+              onSubmitEditing={Keyboard.dismiss}
             />
           ) : (
             <Text style={styles.opponentText}>{currentSession.opponent}</Text>
@@ -543,7 +554,7 @@ export default function SessionDetailScreen() {
         </View>
       )}
 
-      {currentSession.notes && (
+      {(isEditing || currentSession.notes) && (
         <View style={styles.notesCard}>
           <Text style={styles.notesLabel}>NOTES</Text>
           {isEditing ? (

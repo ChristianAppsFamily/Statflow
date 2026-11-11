@@ -54,13 +54,6 @@ export default function HistoryScreen() {
     return playerSessions.filter((s) => s.sport === filter);
   }, [playerSessions, filter]);
 
-  const formatDate = (isoDate: string) =>
-    formatSessionDate(isoDate, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-
   const getStatSummary = (session: Session) => {
     const config = SPORTS_CONFIG[session.sport];
     const allStats = [
@@ -174,7 +167,13 @@ export default function HistoryScreen() {
                         </View>
                       )}
                     </View>
-                    <Text style={styles.sessionDate}>{formatDate(item.date)}</Text>
+                    <Text style={styles.sessionDate}>
+                      {formatSessionDate(item.date, {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </Text>
                   </View>
                   {(item.teamScore !== undefined || item.opponentScore !== undefined) && (
                     <View style={styles.scoreContainer}>

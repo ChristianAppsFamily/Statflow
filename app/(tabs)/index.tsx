@@ -26,12 +26,6 @@ export default function HomeScreen() {
     return filtered.slice(0, 3);
   }, [sessions, activePlayerId]);
 
-  const formatDate = (isoDate: string) =>
-    formatSessionDate(isoDate, {
-      month: 'short',
-      day: 'numeric',
-    });
-
   const getTopStats = (session: Session) => {
     const config = SPORTS_CONFIG[session.sport];
     const allStats = [
@@ -125,7 +119,10 @@ export default function HomeScreen() {
                     )}
                   </View>
                   <Text style={styles.recentMeta}>
-                    {formatDate(session.date)}
+                    {formatSessionDate(session.date, {
+                      month: 'short',
+                      day: 'numeric',
+                    })}
                     {session.opponent ? ` vs ${session.opponent}` : ''}
                   </Text>
                 </View>

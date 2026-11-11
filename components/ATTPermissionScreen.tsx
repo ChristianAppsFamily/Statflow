@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Image } from 'react-native';
 import { requestTrackingPermissionsAsync, getTrackingPermissionsAsync } from 'expo-tracking-transparency';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors } from '@/constants/colors';
-
-const ATT_SHOWN_KEY = 'statflow_att_shown';
 
 interface ATTPermissionScreenProps {
   onComplete: () => void;
@@ -14,10 +11,10 @@ export default function ATTPermissionScreen({ onComplete }: ATTPermissionScreenP
   const [status, setStatus] = useState<string>('checking');
 
   useEffect(() => {
-    checkAndRequestPermission();
+    void checkExistingPermission();
   }, []);
 
-  async function checkAndRequestPermission() {
+  async function checkExistingPermission() {
     if (Platform.OS !== 'ios') {
       onComplete();
       return;
@@ -25,17 +22,16 @@ export default function ATTPermissionScreen({ onComplete }: ATTPermissionScreenP
 
     try {
       const { status: existingStatus } = await getTrackingPermissionsAsync();
-      console.log('[ATT Screen] Existing status:', existingStatus);
+      if (__DEV__) console.log('[ATT Screen] Existing status:', existingStatus);
 
       if (existingStatus === 'granted' || existingStatus === 'denied') {
-        await AsyncStorage.setItem(ATT_SHOWN_KEY, 'true');
         onComplete();
         return;
       }
 
       setStatus('ready');
     } catch (e) {
-      console.log('[ATT Screen] Error checking status:', e);
+      if (__DEV__) console.log('[ATT Screen] Error checking status:', e);
       onComplete();
     }
   }
@@ -43,16 +39,18 @@ export default function ATTPermissionScreen({ onComplete }: ATTPermissionScreenP
   async function handleRequestPermission() {
     try {
       setStatus('requesting');
-      const { status } = await requestTrackingPermissionsAsync();
-      console.log('[ATT Screen] User response:', status);
-      
-      await AsyncStorage.setItem(ATT_SHOWN_KEY, 'true');
+      const { status: result } = await requestTrackingPermissionsAsync();
+      if (__DEV__) console.log('[ATT Screen] User response:', result);
       onComplete();
     } catch (e) {
-      console.log('[ATT Screen] Error requesting permission:', e);
-      await AsyncStorage.setItem(ATT_SHOWN_KEY, 'true');
+      if (__DEV__) console.log('[ATT Screen] Error requesting permission:', e);
       onComplete();
     }
+  }
+
+  function handleAskLater() {
+    // Defer the system ATT dialog; parent still marks flow completed for this install.
+    onComplete();
   }
 
   if (status === 'checking') {
@@ -73,14 +71,14 @@ export default function ATTPermissionScreen({ onComplete }: ATTPermissionScreenP
         </Text>
         <TouchableOpacity 
           style={styles.allowButton}
-          onPress={handleRequestPermission}
+          onPress={() => { void handleRequestPermission(); }}
         >
           <Text style={styles.allowButtonText}>Continue</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
           style={styles.skipButton}
-          onPress={handleRequestPermission}
+          onPress={handleAskLater}
         >
           <Text style={styles.skipButtonText}>Ask Me Later</Text>
         </TouchableOpacity>

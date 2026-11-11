@@ -1,13 +1,18 @@
 import createContextHook from '@nkzw/create-context-hook';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 import {
   useIAP,
-  type Product,
+  getAvailablePurchases as fetchAvailablePurchases,
   type Purchase,
 } from 'expo-iap';
+import { setAdFreeEntitlement } from '@/services/ads';
 
 const PRODUCT_ID = 'com.christianappempire.statflowapppremium';
+
+function log(...args: unknown[]) {
+  if (__DEV__) console.log(...args);
+}
 
 export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
   const [isAdFree, setIsAdFree] = useState(false);
@@ -15,6 +20,15 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
   const [isRestoring, setIsRestoring] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const purchaseWaiterRef = useRef<{
+    resolve: (ok: boolean) => void;
+    reject: (err: Error) => void;
+  } | null>(null);
+
+  const applyAdFree = useCallback((value: boolean) => {
+    setIsAdFree(value);
+    setAdFreeEntitlement(value);
+  }, []);
 
   const {
     connected,
@@ -24,26 +38,47 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     getAvailablePurchases,
     requestPurchase,
     restorePurchases: restoreIapPurchases,
+    finishTransaction,
   } = useIAP({
     onPurchaseSuccess: (purchase: Purchase) => {
-      console.log('[StoreKit] Purchase success callback:', purchase.productId);
-      if (purchase.productId === PRODUCT_ID) {
-        setIsAdFree(true);
-        setIsPurchasing(false);
-      }
+      log('[StoreKit] Purchase success callback:', purchase.productId);
+      void (async () => {
+        try {
+          if (purchase.productId === PRODUCT_ID) {
+            applyAdFree(true);
+            setIsPurchasing(false);
+            try {
+              await finishTransaction({ purchase, isConsumable: false });
+            } catch (e) {
+              log('[StoreKit] finishTransaction error:', e);
+            }
+            purchaseWaiterRef.current?.resolve(true);
+            purchaseWaiterRef.current = null;
+          }
+        } catch (e) {
+          log('[StoreKit] Purchase success handler error:', e);
+          purchaseWaiterRef.current?.reject(
+            e instanceof Error ? e : new Error('Purchase failed')
+          );
+          purchaseWaiterRef.current = null;
+        }
+      })();
     },
-    onPurchaseError: (error) => {
-      console.error('[StoreKit] Purchase error callback:', error);
+    onPurchaseError: (purchaseError) => {
+      log('[StoreKit] Purchase error callback:', purchaseError);
       setIsPurchasing(false);
-      setError(error.message || 'Purchase failed. Please try again.');
+      setError(purchaseError.message || 'Purchase failed. Please try again.');
+      purchaseWaiterRef.current?.reject(
+        new Error(purchaseError.message || 'Purchase failed')
+      );
+      purchaseWaiterRef.current = null;
     },
-    onError: (error: Error) => {
-      console.error('[StoreKit] General error callback:', error);
-      setError(error.message || 'An error occurred. Please try again.');
+    onError: (err: Error) => {
+      log('[StoreKit] General error callback:', err);
+      setError(err.message || 'An error occurred. Please try again.');
     },
   });
 
-  // Initialize products on mount
   useEffect(() => {
     if (Platform.OS === 'web') {
       setIsLoading(false);
@@ -53,20 +88,14 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     const init = async () => {
       try {
         setError(null);
-        console.log('[StoreKit] Initializing... Connected:', connected);
-        
-        if (!connected) {
-          console.log('[StoreKit] Not connected yet, waiting...');
-          return;
-        }
+        if (!connected) return;
 
-        // Fetch products
-        console.log('[StoreKit] Fetching products for ID:', PRODUCT_ID);
+        log('[StoreKit] Fetching products for ID:', PRODUCT_ID);
         await fetchProducts({ skus: [PRODUCT_ID], type: 'in-app' });
-        console.log('[StoreKit] Products fetch initiated');
       } catch (e) {
-        console.error('[StoreKit] Init error:', e);
+        log('[StoreKit] Init error:', e);
         setError('Failed to initialize purchases. Please try again.');
+      } finally {
         setIsLoading(false);
       }
     };
@@ -74,103 +103,97 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     void init();
   }, [connected, fetchProducts]);
 
-  // Check for existing purchases when products load
   useEffect(() => {
+    if (!connected || products.length === 0) return;
+
     const checkPurchases = async () => {
       try {
-        console.log('[StoreKit] Checking for existing purchases...');
         await getAvailablePurchases();
       } catch (e) {
-        console.error('[StoreKit] Error checking purchases:', e);
+        log('[StoreKit] Error checking purchases:', e);
       }
     };
 
-    if (connected && products.length > 0) {
-      console.log('[StoreKit] Products loaded:', products.map(p => p.id));
-      void checkPurchases();
-      setIsLoading(false);
-    }
+    void checkPurchases();
   }, [connected, products, getAvailablePurchases]);
 
-  // Update ad-free status when purchases change
   useEffect(() => {
-    const hasPremium = availablePurchases.some(
-      (p) => p.productId === PRODUCT_ID
-    );
+    const hasPremium = availablePurchases.some((p) => p.productId === PRODUCT_ID);
     if (hasPremium) {
-      setIsAdFree(true);
-      console.log('[StoreKit] Premium purchase found');
+      applyAdFree(true);
+      log('[StoreKit] Premium purchase found');
     }
-  }, [availablePurchases]);
+  }, [availablePurchases, applyAdFree]);
 
   const product = useMemo(() => {
-    return products.find(p => p.id === PRODUCT_ID) || null;
+    return products.find((p) => p.id === PRODUCT_ID) || null;
   }, [products]);
 
   const purchaseNoAds = useCallback(async () => {
     if (!product) {
-      console.error('[StoreKit] Purchase attempted but no product available');
       throw new Error('No package available. Please try again later.');
     }
-    
-    console.log('[StoreKit] Starting purchase for:', PRODUCT_ID);
+
+    log('[StoreKit] Starting purchase for:', PRODUCT_ID);
     setIsPurchasing(true);
     setError(null);
-    
-    try {
-      await requestPurchase({
+
+    return new Promise<boolean>((resolve, reject) => {
+      purchaseWaiterRef.current = { resolve, reject };
+
+      void requestPurchase({
         request: {
           ios: { sku: PRODUCT_ID },
           android: { skus: [PRODUCT_ID] },
         },
         type: 'in-app',
+      }).catch((err) => {
+        setIsPurchasing(false);
+        purchaseWaiterRef.current = null;
+        reject(err instanceof Error ? err : new Error('Purchase failed'));
       });
-      console.log('[StoreKit] Purchase request sent');
-      // Note: Success is handled by onPurchaseSuccess callback
-    } catch (error) {
-      console.error('[StoreKit] Purchase request error:', error);
-      setIsPurchasing(false);
-      throw error;
-    }
+    });
   }, [product, requestPurchase]);
 
   const restorePurchases = useCallback(async () => {
-    console.log('[StoreKit] Restoring purchases...');
+    log('[StoreKit] Restoring purchases...');
     setIsRestoring(true);
     setError(null);
-    
+
     try {
       await restoreIapPurchases();
-      await getAvailablePurchases();
-      
-      const hasPremium = availablePurchases.some(
-        (p) => p.productId === PRODUCT_ID
-      );
-      
-      if (hasPremium) {
-        setIsAdFree(true);
-        console.log('[StoreKit] Premium restored');
-      } else {
-        console.log('[StoreKit] No premium purchase found to restore');
+      // Prefer module API that returns the purchase list (hook state is stale after await)
+      let purchases: Purchase[] = [];
+      try {
+        purchases = await fetchAvailablePurchases();
+      } catch {
+        await getAvailablePurchases();
+        purchases = availablePurchases;
       }
-      
-      setIsRestoring(false);
+
+      const hasPremium = purchases.some((p) => p.productId === PRODUCT_ID);
+      if (hasPremium) {
+        applyAdFree(true);
+        log('[StoreKit] Premium restored');
+      } else {
+        log('[StoreKit] No premium purchase found to restore');
+      }
+
       return {
         entitlements: {
           active: hasPremium ? { no_ads: true } : {},
         },
       };
-    } catch (error) {
-      console.error('[StoreKit] Restore error:', error);
+    } catch (err) {
+      log('[StoreKit] Restore error:', err);
+      throw err;
+    } finally {
       setIsRestoring(false);
-      throw error;
     }
-  }, [restoreIapPurchases, getAvailablePurchases, availablePurchases]);
+  }, [restoreIapPurchases, getAvailablePurchases, availablePurchases, applyAdFree]);
 
   const lifetimePackage = useMemo(() => {
     if (!product) return null;
-    // Product type can be ProductIOS or ProductAndroid
-    // Both have displayPrice for showing the price
     return {
       product: {
         priceString: product.displayPrice ?? '$4.99',

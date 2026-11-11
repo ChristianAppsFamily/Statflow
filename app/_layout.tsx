@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState } from "react";
-import { Platform } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AppProvider } from "@/contexts/AppContext";
@@ -17,46 +17,36 @@ const FIRST_OPEN_COMPLETED_KEY = "statflow_first_open_completed";
 const ATT_COMPLETED_KEY = "statflow_att_completed";
 
 /**
- * Show interstitial when app is opened every 7th time (7, 14, 21, 28, etc.)
- * Lifetime counter - persists across all sessions
- * Does not show on the very first app open ever (fresh install)
+ * Show interstitial when app is opened every 7th time (7, 14, 21, 28, etc.).
+ * Skips the very first app open after install.
  */
-async function trackAppOpenAndMaybeShowAd(): Promise<void> {
+async function trackAppOpenAndMaybeShowAd(): Promise<number | null> {
   try {
-    // Get current lifetime count
     const raw = await AsyncStorage.getItem(APP_OPENS_LIFETIME_KEY);
     let count: number = raw ? parseInt(raw, 10) : 0;
-    
-    // Check if this is the first open ever
+
     const firstOpenCompleted = await AsyncStorage.getItem(FIRST_OPEN_COMPLETED_KEY);
     const isFirstOpenEver = firstOpenCompleted !== 'true';
-    
-    // Increment counter
+
     count += 1;
     await AsyncStorage.setItem(APP_OPENS_LIFETIME_KEY, count.toString());
-    console.log("[App] Lifetime open count:", count);
+    if (__DEV__) console.log("[App] Lifetime open count:", count);
 
-    // Mark first open as completed
     if (isFirstOpenEver) {
       await AsyncStorage.setItem(FIRST_OPEN_COMPLETED_KEY, 'true');
-      console.log("[App] First open ever - not showing interstitial");
       return count;
     }
 
-    // Show interstitial every 7th open (7, 14, 21, 28, etc.)
     if (count % 7 === 0) {
-      // Check cooldown before showing
       if (!hasInterstitialCooldownPassed()) {
-        console.log("[App] Cooldown active, skipping app open interstitial");
-        return;
+        return count;
       }
-      // Small delay so the first frame renders before ad appears
       setTimeout(() => void showInterstitialAd(), 1500);
     }
 
     return count;
   } catch (e) {
-    console.log("[App] Error tracking app opens:", e);
+    if (__DEV__) console.log("[App] Error tracking app opens:", e);
     return null;
   }
 }
@@ -96,10 +86,8 @@ export default function RootLayout() {
 
   useEffect(() => {
     void SplashScreen.hideAsync();
-    
-    // Check if ATT was already completed
+
     AsyncStorage.getItem(ATT_COMPLETED_KEY).then((value) => {
-      // ATT pre-prompt is iOS-only; other platforms can initialize ads and tracking immediately
       if (value === 'true' || Platform.OS !== 'ios') {
         setAttCompleted(true);
       } else {
@@ -110,7 +98,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (attCompleted === true && Platform.OS !== 'web') {
-      console.log('[App] ATT completed, initializing ads...');
+      if (__DEV__) console.log('[App] ATT completed, initializing ads...');
       void initializeAds().then(() => {
         void trackAppOpenAndMaybeShowAd();
       });
@@ -122,9 +110,8 @@ export default function RootLayout() {
     setAttCompleted(true);
   };
 
-  // Show loading or ATT screen
   if (attCompleted === null) {
-    return null; // Still checking
+    return null;
   }
 
   if (attCompleted === false && Platform.OS === 'ios') {
@@ -136,7 +123,7 @@ export default function RootLayout() {
       <AppProvider>
         <PlayerProvider>
           <SubscriptionProvider>
-            <GestureHandlerRootView>
+            <GestureHandlerRootView style={styles.root}>
               <RootLayoutNav />
             </GestureHandlerRootView>
           </SubscriptionProvider>
@@ -145,3 +132,9 @@ export default function RootLayout() {
     </QueryClientProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
+});

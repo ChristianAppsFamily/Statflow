@@ -1,39 +1,57 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { getTrackingStatus } from '@/services/tracking';
+import { getAdUnitId } from '@/constants/ads';
 
 let adsInitialized = false;
 let trackingGranted = false;
-let mobileAdsInstance: any = null;
+let isAdFreeUser = false;
 let InterstitialAd: any = null;
 let AdEventType: any = null;
 let interstitialAd: any = null;
 let interstitialLoaded = false;
+let interstitialUnsubscribers: Array<() => void> = [];
 let lastInterstitialTime = 0;
-const INTERSTITIAL_COOLDOWN_MS = 60000; // 60 seconds between interstitials
+const INTERSTITIAL_COOLDOWN_MS = 60000;
 
-// In-memory counter for players added this session
-let playersCreatedInSession = 0;
+function log(...args: unknown[]) {
+  if (__DEV__) console.log(...args);
+}
+
+/** Keep interstitial gating in sync with SubscriptionContext entitlement. */
+export function setAdFreeEntitlement(adFree: boolean): void {
+  isAdFreeUser = adFree;
+}
+
+function clearInterstitialListeners(): void {
+  for (const unsub of interstitialUnsubscribers) {
+    try {
+      unsub();
+    } catch {
+      // ignore
+    }
+  }
+  interstitialUnsubscribers = [];
+}
 
 /**
- * Initialize AdMob with ATT permission request
+ * Initialize AdMob. ATT is handled by ATTPermissionScreen on iOS; only read status here.
  */
 export async function initializeAds(): Promise<void> {
   if (Platform.OS === 'web') {
-    console.log('[Ads] AdMob not supported on web');
+    log('[Ads] AdMob not supported on web');
     return;
   }
 
   if (adsInitialized) {
-    console.log('[Ads] Already initialized');
+    log('[Ads] Already initialized');
     return;
   }
 
   try {
-    // ATT is handled by ATTPermissionScreen on iOS; only read status here (do not re-prompt)
     trackingGranted = (await getTrackingStatus()) === 'granted';
-    console.log('[Ads] Tracking granted:', trackingGranted);
+    log('[Ads] Tracking granted:', trackingGranted);
 
-    // Step 2: Import SDK dynamically (safe — won't crash if not installed)
     try {
       const gma = require('react-native-google-mobile-ads');
       const mobileAdsFactory = gma.MobileAds ?? gma.default;
@@ -41,124 +59,133 @@ export async function initializeAds(): Promise<void> {
       AdEventType = gma.AdEventType;
 
       if (typeof mobileAdsFactory !== 'function') {
-        console.log('[Ads] MobileAds export is not callable');
+        log('[Ads] MobileAds export is not callable');
         return;
       }
       if (typeof InterstitialAd?.createForAdRequest !== 'function') {
-        console.log('[Ads] InterstitialAd.createForAdRequest is not callable');
+        log('[Ads] InterstitialAd.createForAdRequest is not callable');
         return;
       }
 
       const instance = mobileAdsFactory();
-      mobileAdsInstance = instance;
 
       if (typeof instance?.setRequestConfiguration !== 'function' || typeof instance?.initialize !== 'function') {
-        console.log('[Ads] MobileAds instance methods unavailable');
+        log('[Ads] MobileAds instance methods unavailable');
         return;
       }
 
-      console.log('[Ads] SDK imported successfully');
+      await instance.setRequestConfiguration({
+        maxAdContentRating: 'G',
+        tagForChildDirectedTreatment: false,
+        tagForUnderAgeOfConsent: false,
+        testDeviceIdentifiers: __DEV__ ? ['EMULATOR'] : undefined,
+      });
+
+      await instance.initialize();
+      adsInitialized = true;
+      log('[Ads] Initialized successfully');
+
+      void loadInterstitialAd();
     } catch (importErr: any) {
-      console.log('[Ads] SDK unavailable (Expo Go / not installed):', importErr?.message);
+      log('[Ads] SDK unavailable (Expo Go / not installed):', importErr?.message);
       return;
     }
-
-    const instance = mobileAdsInstance;
-
-    await instance.setRequestConfiguration({
-      maxAdContentRating: 'G',
-      tagForChildDirectedTreatment: false,
-      tagForUnderAgeOfConsent: false,
-      testDeviceIdentifiers: __DEV__ ? ['EMULATOR'] : undefined,
-    });
-
-    // Step 4: Initialize
-    await instance.initialize();
-    adsInitialized = true;
-    console.log('[Ads] Initialized successfully');
-
-    // Preload first interstitial
-    void loadInterstitialAd();
   } catch (e: any) {
-    console.log('[Ads] Init failed:', e?.message || e);
+    log('[Ads] Init failed:', e?.message || e);
     adsInitialized = false;
   }
 }
 
 async function loadInterstitialAd(): Promise<void> {
-  if (!adsInitialized || !InterstitialAd || !AdEventType) return;
+  if (!adsInitialized || !InterstitialAd || !AdEventType || isAdFreeUser) return;
 
   try {
-    const { getAdUnitId } = require('@/constants/ads');
     const adUnitId = getAdUnitId('interstitial');
     if (!adUnitId) return;
 
-    console.log('[Ads] Loading interstitial...', adUnitId);
+    clearInterstitialListeners();
+    interstitialLoaded = false;
+
+    log('[Ads] Loading interstitial...', adUnitId);
 
     interstitialAd = InterstitialAd.createForAdRequest(adUnitId, {
       requestNonPersonalizedAdsOnly: !trackingGranted,
     });
 
-    interstitialAd.addAdEventListener(AdEventType.LOADED, () => {
-      console.log('[Ads] ✅ Interstitial loaded');
+    const unsubLoaded = interstitialAd.addAdEventListener(AdEventType.LOADED, () => {
+      log('[Ads] Interstitial loaded');
       interstitialLoaded = true;
     });
 
-    interstitialAd.addAdEventListener(AdEventType.ERROR, (err: any) => {
-      console.log('[Ads] ❌ Interstitial error:', err?.message || err);
+    const unsubError = interstitialAd.addAdEventListener(AdEventType.ERROR, (err: any) => {
+      log('[Ads] Interstitial error:', err?.message || err);
       interstitialLoaded = false;
       setTimeout(() => void loadInterstitialAd(), 30000);
     });
 
-    interstitialAd.addAdEventListener(AdEventType.CLOSED, () => {
-      console.log('[Ads] Interstitial closed, reloading...');
+    const unsubClosed = interstitialAd.addAdEventListener(AdEventType.CLOSED, () => {
+      log('[Ads] Interstitial closed, reloading...');
       interstitialLoaded = false;
       void loadInterstitialAd();
     });
 
+    interstitialUnsubscribers = [
+      typeof unsubLoaded === 'function' ? unsubLoaded : () => unsubLoaded?.remove?.(),
+      typeof unsubError === 'function' ? unsubError : () => unsubError?.remove?.(),
+      typeof unsubClosed === 'function' ? unsubClosed : () => unsubClosed?.remove?.(),
+    ];
+
     interstitialAd.load();
   } catch (e: any) {
-    console.log('[Ads] Failed to load interstitial:', e?.message);
+    log('[Ads] Failed to load interstitial:', e?.message);
     interstitialLoaded = false;
   }
 }
 
 /**
- * Show an interstitial ad. Safe — no-ops if not ready or in cooldown.
+ * Show an interstitial ad. Returns true only when an ad was actually shown.
  */
-export async function showInterstitialAd(): Promise<void> {
+export async function showInterstitialAd(): Promise<boolean> {
+  if (isAdFreeUser) {
+    log('[Ads] Ad-free user, skipping interstitial');
+    return false;
+  }
+
   if (!adsInitialized) {
-    console.log('[Ads] Not initialized, skipping interstitial');
-    return;
+    log('[Ads] Not initialized, skipping interstitial');
+    return false;
   }
 
   const now = Date.now();
   if (now - lastInterstitialTime < INTERSTITIAL_COOLDOWN_MS) {
-    console.log('[Ads] Cooldown active, skipping interstitial');
-    return;
+    log('[Ads] Cooldown active, skipping interstitial');
+    return false;
   }
 
   if (!interstitialLoaded || !interstitialAd) {
-    console.log('[Ads] Interstitial not ready, preloading for next time');
+    log('[Ads] Interstitial not ready, preloading for next time');
     void loadInterstitialAd();
-    return;
+    return false;
   }
 
   try {
     if (typeof interstitialAd.show !== 'function') {
-      console.log('[Ads] Interstitial show() is not callable');
+      log('[Ads] Interstitial show() is not callable');
       interstitialLoaded = false;
       void loadInterstitialAd();
-      return;
+      return false;
     }
 
-    console.log('[Ads] Showing interstitial...');
+    log('[Ads] Showing interstitial...');
     await interstitialAd.show();
     lastInterstitialTime = now;
+    interstitialLoaded = false;
+    return true;
   } catch (e: any) {
-    console.log('[Ads] Failed to show interstitial:', e?.message);
+    log('[Ads] Failed to show interstitial:', e?.message);
     interstitialLoaded = false;
     void loadInterstitialAd();
+    return false;
   }
 }
 
@@ -170,134 +197,78 @@ export function isTrackingGranted(): boolean {
   return trackingGranted;
 }
 
-export async function showRewardedAd(): Promise<boolean> {
-  console.log('[Ads] Rewarded ads not yet implemented');
-  return false;
-}
-
-// ─── Cooldown helper ─────────────────────────────────────────────────────────
-
-/**
- * Check if the 60-second cooldown has passed since the last interstitial
- */
 export function hasInterstitialCooldownPassed(): boolean {
-  const now = Date.now();
-  return now - lastInterstitialTime >= INTERSTITIAL_COOLDOWN_MS;
+  return Date.now() - lastInterstitialTime >= INTERSTITIAL_COOLDOWN_MS;
 }
-
-// ─── Player threshold interstitial ───────────────────────────────────────────
 
 const PLAYER_THRESHOLD_SHOWN_KEY = 'statflow_interstitial_player_threshold_shown';
 
 /**
- * Check and show interstitial when user adds more than 3 players total (4th player)
- * One-time trigger - only fires once
+ * One-time interstitial when user adds more than 3 players (4th player).
  */
 export async function checkAndShowPlayerThresholdInterstitial(totalPlayers: number): Promise<void> {
-  if (totalPlayers <= 3) return;
+  if (totalPlayers <= 3 || isAdFreeUser) return;
 
   try {
-    const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
     const alreadyShown = await AsyncStorage.getItem(PLAYER_THRESHOLD_SHOWN_KEY);
-    if (alreadyShown === 'true') {
-      console.log('[Ads] Player threshold interstitial already shown');
-      return;
-    }
+    if (alreadyShown === 'true') return;
 
-    if (!hasInterstitialCooldownPassed()) {
-      console.log('[Ads] Cooldown active, skipping player threshold interstitial');
-      return;
-    }
+    if (!hasInterstitialCooldownPassed()) return;
 
-    await showInterstitialAd();
-    await AsyncStorage.setItem(PLAYER_THRESHOLD_SHOWN_KEY, 'true');
-    console.log('[Ads] Player threshold interstitial shown');
+    const shown = await showInterstitialAd();
+    if (shown) {
+      await AsyncStorage.setItem(PLAYER_THRESHOLD_SHOWN_KEY, 'true');
+    }
   } catch (e) {
-    console.log('[Ads] Error checking player threshold:', e);
+    log('[Ads] Error checking player threshold:', e);
   }
 }
-
-// ─── Sports threshold interstitial ───────────────────────────────────────────
 
 const TRACKED_SPORTS_KEY = 'statflow_tracked_sports';
 const SPORTS_THRESHOLD_SHOWN_KEY = 'statflow_interstitial_sports_threshold_shown';
 
 /**
- * Check and show interstitial when user tracks more than 2 sports total (3rd unique sport)
- * One-time trigger - only fires once
+ * One-time interstitial when user tracks more than 2 sports (3rd unique sport).
  */
 export async function checkAndShowSportsThresholdInterstitial(sports: string[]): Promise<void> {
-  if (sports.length <= 2) return;
+  if (sports.length <= 2 || isAdFreeUser) return;
 
   try {
-    const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
     const alreadyShown = await AsyncStorage.getItem(SPORTS_THRESHOLD_SHOWN_KEY);
-    if (alreadyShown === 'true') {
-      console.log('[Ads] Sports threshold interstitial already shown');
-      return;
-    }
+    if (alreadyShown === 'true') return;
 
-    if (!hasInterstitialCooldownPassed()) {
-      console.log('[Ads] Cooldown active, skipping sports threshold interstitial');
-      return;
-    }
+    if (!hasInterstitialCooldownPassed()) return;
 
-    await showInterstitialAd();
-    await AsyncStorage.setItem(SPORTS_THRESHOLD_SHOWN_KEY, 'true');
-    console.log('[Ads] Sports threshold interstitial shown');
+    const shown = await showInterstitialAd();
+    if (shown) {
+      await AsyncStorage.setItem(SPORTS_THRESHOLD_SHOWN_KEY, 'true');
+    }
   } catch (e) {
-    console.log('[Ads] Error checking sports threshold:', e);
+    log('[Ads] Error checking sports threshold:', e);
   }
 }
 
-/**
- * Get the list of tracked sports from AsyncStorage
- */
 export async function getTrackedSports(): Promise<string[]> {
   try {
-    const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
     const stored = await AsyncStorage.getItem(TRACKED_SPORTS_KEY);
     return stored ? JSON.parse(stored) : [];
   } catch (e) {
-    console.log('[Ads] Error getting tracked sports:', e);
+    log('[Ads] Error getting tracked sports:', e);
     return [];
   }
 }
 
-/**
- * Add a sport to the tracked sports list and return the updated list
- */
 export async function addTrackedSport(sport: string): Promise<string[]> {
   try {
-    const AsyncStorage = (await import('@react-native-async-storage/async-storage')).default;
     const current = await getTrackedSports();
     if (!current.includes(sport)) {
       const updated = [...current, sport];
       await AsyncStorage.setItem(TRACKED_SPORTS_KEY, JSON.stringify(updated));
-      console.log('[Ads] Tracked sports updated:', updated);
       return updated;
     }
     return current;
   } catch (e) {
-    console.log('[Ads] Error adding tracked sport:', e);
+    log('[Ads] Error adding tracked sport:', e);
     return [];
   }
-}
-
-// ─── Player interstitial counter ─────────────────────────────────────────────
-
-export function incrementPlayersCreated(): void {
-  playersCreatedInSession++;
-  console.log('[Ads] Players created this session:', playersCreatedInSession);
-}
-
-/**
- * Returns true when 2nd or more player has been added (triggers interstitial)
- */
-export function shouldShowInterstitialForPlayer(): boolean {
-  return playersCreatedInSession >= 2;
-}
-
-export function resetSessionCounters(): void {
-  playersCreatedInSession = 0;
 }
