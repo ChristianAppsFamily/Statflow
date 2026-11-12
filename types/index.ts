@@ -45,9 +45,12 @@ export interface Verse {
   text: string;
 }
 
+export type ThemeMode = 'light' | 'dark' | 'system';
+
 export interface AppSettings {
   dailyVerseEnabled: boolean;
   hapticsEnabled: boolean;
+  themeMode: ThemeMode;
 }
 
 export interface Highlight {

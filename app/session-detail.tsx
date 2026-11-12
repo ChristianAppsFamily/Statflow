@@ -24,7 +24,8 @@ import { useApp } from '@/contexts/AppContext';
 import { usePlayers } from '@/contexts/PlayerContext';
 import { SPORTS_CONFIG } from '@/constants/sports';
 import { Session, Highlight } from '@/types';
-import { Colors } from '@/constants/colors';
+import { ThemeColors } from '@/constants/colors';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import { formatSessionDate } from '@/utils/sessionDate';
 import { persistLocalFile } from '@/utils/mediaPersist';
 
@@ -32,6 +33,8 @@ type HighlightAddMode = 'none' | 'link' | 'file';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function SessionDetailScreen() {
+  const { colors } = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
   const { sessions, updateSession, deleteSession, highlights, addHighlight, updateHighlight, deleteHighlight, settings } = useApp();
@@ -458,7 +461,7 @@ export default function SessionDetailScreen() {
                 )
               }
               placeholder="Opponent"
-              placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               returnKeyType="done"
               blurOnSubmit
               onSubmitEditing={Keyboard.dismiss}
@@ -528,7 +531,7 @@ export default function SessionDetailScreen() {
                   )
                 }
                 placeholder="0"
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="number-pad"
               />
             </View>
@@ -546,7 +549,7 @@ export default function SessionDetailScreen() {
                   )
                 }
                 placeholder="0"
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="number-pad"
               />
             </View>
@@ -565,7 +568,7 @@ export default function SessionDetailScreen() {
                 setEditedSession((prev) => (prev ? { ...prev, notes: text } : null))
               }
               placeholder="Notes"
-              placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               multiline
               numberOfLines={3}
               blurOnSubmit
@@ -605,7 +608,7 @@ export default function SessionDetailScreen() {
       <View style={styles.highlightsSection}>
         <View style={styles.highlightsSectionHeader}>
           <View style={styles.highlightsTitleRow}>
-            <Star size={16} color={Colors.gold} />
+            <Star size={16} color={colors.gold} />
             <Text style={styles.highlightsSectionTitle}>GAME HIGHLIGHTS</Text>
           </View>
           {highlightAddMode === 'none' && (
@@ -614,14 +617,14 @@ export default function SessionDetailScreen() {
                 style={styles.hlAddBtn}
                 onPress={() => setHighlightAddMode('link')}
               >
-                <Link size={14} color={Colors.gold} />
+                <Link size={14} color={colors.gold} />
                 <Text style={styles.hlAddBtnText}>Link</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.hlAddBtn}
                 onPress={() => setHighlightAddMode('file')}
               >
-                <VideoIcon size={14} color={Colors.gold} />
+                <VideoIcon size={14} color={colors.gold} />
                 <Text style={styles.hlAddBtnText}>Video</Text>
               </TouchableOpacity>
             </View>
@@ -635,7 +638,7 @@ export default function SessionDetailScreen() {
                 {highlightAddMode === 'link' ? 'Add Video Link' : 'Upload Video'}
               </Text>
               <TouchableOpacity onPress={resetHighlightForm}>
-                <X size={20} color={Colors.textSecondary} />
+                <X size={20} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             <View style={styles.hlInputGroup}>
@@ -645,7 +648,7 @@ export default function SessionDetailScreen() {
                 value={hlTitle}
                 onChangeText={setHlTitle}
                 placeholder="e.g., Game-winning shot"
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 returnKeyType="done"
                 blurOnSubmit
               />
@@ -658,7 +661,7 @@ export default function SessionDetailScreen() {
                   value={hlUrl}
                   onChangeText={setHlUrl}
                   placeholder="https://youtube.com/..."
-                  placeholderTextColor={Colors.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                   keyboardType="url"
                   autoCapitalize="none"
                   returnKeyType="done"
@@ -673,7 +676,7 @@ export default function SessionDetailScreen() {
                 value={hlNotes}
                 onChangeText={setHlNotes}
                 placeholder="Add any notes..."
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 multiline
                 numberOfLines={2}
                 blurOnSubmit
@@ -684,7 +687,7 @@ export default function SessionDetailScreen() {
               style={styles.hlSaveBtn}
               onPress={highlightAddMode === 'link' ? handleAddHighlightLink : handlePickHighlightVideo}
             >
-              <Plus size={18} color={Colors.navy} />
+              <Plus size={18} color={colors.navy} />
               <Text style={styles.hlSaveBtnText}>
                 {highlightAddMode === 'link' ? 'Save Link' : 'Choose Video'}
               </Text>
@@ -700,7 +703,7 @@ export default function SessionDetailScreen() {
                   <View style={styles.hlEditHeader}>
                     <Text style={styles.hlEditHeaderTitle}>Edit Highlight</Text>
                     <TouchableOpacity onPress={cancelEditHighlight}>
-                      <X size={18} color={Colors.textSecondary} />
+                      <X size={18} color={colors.textSecondary} />
                     </TouchableOpacity>
                   </View>
                   <View style={styles.hlInputGroup}>
@@ -710,7 +713,7 @@ export default function SessionDetailScreen() {
                       value={editHlTitle}
                       onChangeText={setEditHlTitle}
                       placeholder="Highlight title"
-                      placeholderTextColor={Colors.textSecondary}
+                      placeholderTextColor={colors.textSecondary}
                       returnKeyType="done"
                       blurOnSubmit
                     />
@@ -723,7 +726,7 @@ export default function SessionDetailScreen() {
                         value={editHlUrl}
                         onChangeText={setEditHlUrl}
                         placeholder="https://..."
-                        placeholderTextColor={Colors.textSecondary}
+                        placeholderTextColor={colors.textSecondary}
                         keyboardType="url"
                         autoCapitalize="none"
                         returnKeyType="done"
@@ -738,7 +741,7 @@ export default function SessionDetailScreen() {
                       value={editHlNotes}
                       onChangeText={setEditHlNotes}
                       placeholder="Notes..."
-                      placeholderTextColor={Colors.textSecondary}
+                      placeholderTextColor={colors.textSecondary}
                       multiline
                       numberOfLines={2}
                       blurOnSubmit
@@ -750,7 +753,7 @@ export default function SessionDetailScreen() {
                       <Text style={styles.hlEditCancelText}>Cancel</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.hlSaveBtn} onPress={saveEditHighlight}>
-                      <Save size={16} color={Colors.navy} />
+                      <Save size={16} color={colors.navy} />
                       <Text style={styles.hlSaveBtnText}>Save</Text>
                     </TouchableOpacity>
                   </View>
@@ -759,9 +762,9 @@ export default function SessionDetailScreen() {
                 <View key={hl.id} style={styles.hlCard}>
                   <View style={styles.hlIcon}>
                     {hl.type === 'link' ? (
-                      <Link size={16} color={Colors.gold} />
+                      <Link size={16} color={colors.gold} />
                     ) : (
-                      <VideoIcon size={16} color={Colors.gold} />
+                      <VideoIcon size={16} color={colors.gold} />
                     )}
                   </View>
                   <View style={styles.hlContent}>
@@ -776,14 +779,14 @@ export default function SessionDetailScreen() {
                       style={styles.hlActionBtn}
                       onPress={() => startEditHighlight(hl)}
                     >
-                      <Edit2 size={16} color={Colors.gold} />
+                      <Edit2 size={16} color={colors.gold} />
                     </TouchableOpacity>
                     {hl.type === 'link' && hl.url && (
                       <TouchableOpacity
                         style={styles.hlActionBtn}
                         onPress={() => handleOpenLink(hl.url!)}
                       >
-                        <ExternalLink size={16} color={Colors.gold} />
+                        <ExternalLink size={16} color={colors.gold} />
                       </TouchableOpacity>
                     )}
                     {hl.type === 'file' && hl.localUri && (
@@ -791,14 +794,14 @@ export default function SessionDetailScreen() {
                         style={styles.hlActionBtn}
                         onPress={() => handlePlayVideo(hl.localUri!)}
                       >
-                        <Play size={16} color={Colors.gold} />
+                        <Play size={16} color={colors.gold} />
                       </TouchableOpacity>
                     )}
                     <TouchableOpacity
                       style={styles.hlActionBtn}
                       onPress={() => handleDeleteGameHighlight(hl.id, hl.title)}
                     >
-                      <Trash2 size={16} color={Colors.red} />
+                      <Trash2 size={16} color={colors.red} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -816,11 +819,11 @@ export default function SessionDetailScreen() {
         <Text style={styles.shareSectionTitle}>SHARE YOUR GAME</Text>
         <View style={styles.shareRow}>
           <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
-            <Share2 size={20} color={Colors.navy} />
+            <Share2 size={20} color={colors.navy} />
             <Text style={styles.shareButtonText}>Share Stats</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.copyButton} onPress={handleCopyStats}>
-            <Copy size={18} color={Colors.gold} />
+            <Copy size={18} color={colors.gold} />
             <Text style={styles.copyButtonText}>Copy</Text>
           </TouchableOpacity>
         </View>
@@ -830,22 +833,22 @@ export default function SessionDetailScreen() {
         {isEditing ? (
           <>
             <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
-              <X size={20} color={Colors.textSecondary} />
+              <X size={20} color={colors.textSecondary} />
               <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <Save size={20} color={Colors.navy} />
+              <Save size={20} color={colors.navy} />
               <Text style={styles.saveButtonText}>Save</Text>
             </TouchableOpacity>
           </>
         ) : (
           <>
             <TouchableOpacity style={styles.deleteButton} onPress={handleDelete}>
-              <Trash2 size={20} color={Colors.red} />
+              <Trash2 size={20} color={colors.red} />
               <Text style={styles.deleteButtonText}>Delete</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.editButton} onPress={handleEdit}>
-              <Edit2 size={20} color={Colors.navy} />
+              <Edit2 size={20} color={colors.navy} />
               <Text style={styles.editButtonText}>Edit</Text>
             </TouchableOpacity>
           </>
@@ -861,7 +864,7 @@ export default function SessionDetailScreen() {
         <View style={styles.videoModalContainer}>
           <View style={styles.videoModalHeader}>
             <TouchableOpacity style={styles.videoCloseButton} onPress={handleCloseVideoModal}>
-              <X size={24} color={Colors.textPrimary} />
+              <X size={24} color={colors.textPrimary} />
             </TouchableOpacity>
             <Text style={styles.videoModalTitle}>Playing Highlight</Text>
             <View style={{ width: 40 }} />
@@ -891,7 +894,8 @@ export default function SessionDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(Colors: ThemeColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -1480,3 +1484,5 @@ const styles = StyleSheet.create({
     height: SCREEN_WIDTH * (9 / 16),
   },
 });
+}
+

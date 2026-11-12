@@ -69,14 +69,14 @@ export default function ATTPermissionScreen({ onComplete }: ATTPermissionScreenP
         <Text style={styles.description}>
           StatFlow uses personalized ads to support the app. Allowing tracking helps us show relevant ads and improve your experience.
         </Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.allowButton}
           onPress={() => { void handleRequestPermission(); }}
         >
           <Text style={styles.allowButtonText}>Continue</Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.skipButton}
           onPress={handleAskLater}
         >

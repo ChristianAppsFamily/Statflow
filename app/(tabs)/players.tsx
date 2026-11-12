@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useMemo, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -32,7 +32,8 @@ import { usePlayers } from '@/contexts/PlayerContext';
 import { useApp } from '@/contexts/AppContext';
 import { PlayerProfile, Sport } from '@/types';
 import { SPORT_OPTIONS } from '@/constants/sports';
-import { Colors } from '@/constants/colors';
+import { ThemeColors } from '@/constants/colors';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import BannerAdComponent from '@/components/BannerAd';
 
 const AVATAR_COLORS = [
@@ -58,6 +59,8 @@ function getInitials(name: string): string {
 }
 
 export default function PlayersScreen() {
+  const { colors } = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { players, activePlayerId, activePlayer, addPlayer, updatePlayer, deletePlayer, setActivePlayer } = usePlayers();
@@ -292,7 +295,7 @@ export default function PlayersScreen() {
               testID="start-new-game-button"
               accessibilityLabel="Start a new game"
             >
-              <ClipboardPlus size={20} color={Colors.navy} />
+              <ClipboardPlus size={20} color={colors.navy} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.addBtn}
@@ -300,7 +303,7 @@ export default function PlayersScreen() {
               testID="add-player-button"
               accessibilityLabel="Add player"
             >
-              <UserPlus size={20} color={Colors.navy} />
+              <UserPlus size={20} color={colors.navy} />
             </TouchableOpacity>
           </View>
         </View>
@@ -320,7 +323,7 @@ export default function PlayersScreen() {
               <Text style={styles.activeBannerLabel}>ACTIVE PLAYER</Text>
               <Text style={styles.activeBannerName}>{activePlayer.name}</Text>
             </View>
-            <Shield size={16} color={Colors.gold} />
+            <Shield size={16} color={colors.gold} />
           </View>
         )}
       </View>
@@ -332,7 +335,7 @@ export default function PlayersScreen() {
         {players.length === 0 ? (
           <View style={styles.emptyState}>
             <View style={styles.emptyIconCircle}>
-              <Users size={40} color={Colors.cardBorder} />
+              <Users size={40} color={colors.cardBorder} />
             </View>
             <Text style={styles.emptyTitle}>No Players Yet</Text>
             <Text style={styles.emptySubtitle}>
@@ -342,7 +345,7 @@ export default function PlayersScreen() {
               style={styles.emptyButton}
               onPress={openCreateModal}
             >
-              <UserPlus size={20} color={Colors.navy} />
+              <UserPlus size={20} color={colors.navy} />
               <Text style={styles.emptyButtonText}>Create First Player</Text>
             </TouchableOpacity>
           </View>
@@ -422,14 +425,14 @@ export default function PlayersScreen() {
                       onPress={() => openEditModal(player)}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                      <Edit2 size={16} color={Colors.gold} />
+                      <Edit2 size={16} color={colors.gold} />
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.iconBtn}
                       onPress={() => handleDelete(player)}
                       hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                     >
-                      <Trash2 size={16} color={Colors.red} />
+                      <Trash2 size={16} color={colors.red} />
                     </TouchableOpacity>
                   </View>
                 </TouchableOpacity>
@@ -448,13 +451,13 @@ export default function PlayersScreen() {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => { setModalVisible(false); resetForm(); }}>
-              <X size={24} color={Colors.textSecondary} />
+              <X size={24} color={colors.textSecondary} />
             </TouchableOpacity>
             <Text style={styles.modalTitle}>
               {editingPlayer ? 'Edit Player' : 'New Player'}
             </Text>
             <TouchableOpacity onPress={handleSave} testID="save-player-button">
-              <Check size={24} color={Colors.gold} />
+              <Check size={24} color={colors.gold} />
             </TouchableOpacity>
           </View>
 
@@ -476,7 +479,7 @@ export default function PlayersScreen() {
                   <Image source={{ uri: avatarUri }} style={styles.photoPreview} />
                 ) : (
                   <View style={styles.photoPlaceholder}>
-                    <Camera size={32} color={Colors.gold} />
+                    <Camera size={32} color={colors.gold} />
                     <Text style={styles.photoPlaceholderText}>Add Photo</Text>
                   </View>
                 )}
@@ -498,7 +501,7 @@ export default function PlayersScreen() {
                 value={name}
                 onChangeText={setName}
                 placeholder="Player name"
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 autoFocus={!editingPlayer}
                 returnKeyType="next"
               />
@@ -512,7 +515,7 @@ export default function PlayersScreen() {
                   value={age}
                   onChangeText={setAge}
                   placeholder="e.g. 14"
-                  placeholderTextColor={Colors.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                   keyboardType="number-pad"
                 />
               </View>
@@ -523,7 +526,7 @@ export default function PlayersScreen() {
                   value={grade}
                   onChangeText={setGrade}
                   placeholder="e.g. 9th"
-                  placeholderTextColor={Colors.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                 />
               </View>
             </View>
@@ -536,7 +539,7 @@ export default function PlayersScreen() {
                   value={height}
                   onChangeText={setHeight}
                   placeholder={`e.g. 5'10"`}
-                  placeholderTextColor={Colors.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                 />
               </View>
               <View style={[styles.formGroup, { flex: 1 }]}>
@@ -546,7 +549,7 @@ export default function PlayersScreen() {
                   value={jerseyNumber}
                   onChangeText={setJerseyNumber}
                   placeholder="e.g. 23"
-                  placeholderTextColor={Colors.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                   keyboardType="number-pad"
                 />
               </View>
@@ -562,7 +565,7 @@ export default function PlayersScreen() {
                 value={teamName}
                 onChangeText={setTeamName}
                 placeholder="e.g. Eagles"
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 returnKeyType="done"
                 onFocus={() => scrollFieldIntoView('teamName')}
                 onSubmitEditing={Keyboard.dismiss}
@@ -622,7 +625,8 @@ export default function PlayersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(Colors: ThemeColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -993,3 +997,5 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
 });
+}
+

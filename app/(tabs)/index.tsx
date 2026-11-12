@@ -6,13 +6,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '@/contexts/AppContext';
 import { usePlayers } from '@/contexts/PlayerContext';
 import { useDailyVerse } from '@/hooks/useDailyVerse';
-import { Colors } from '@/constants/colors';
+import { ThemeColors } from '@/constants/colors';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import { SPORTS_CONFIG } from '@/constants/sports';
 import { Session } from '@/types';
 import BannerAdComponent from '@/components/BannerAd';
 import { formatSessionDate } from '@/utils/sessionDate';
 
 export default function HomeScreen() {
+  const { colors } = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { settings, sessions } = useApp();
   const { activePlayer, activePlayerId } = usePlayers();
@@ -64,7 +67,7 @@ export default function HomeScreen() {
           style={styles.primaryButton}
           onPress={() => router.push('/players')}
         >
-          <Users size={24} color={Colors.navy} />
+          <Users size={24} color={colors.navy} />
           <Text style={styles.primaryButtonText}>Player Profiles</Text>
         </TouchableOpacity>
 
@@ -72,7 +75,7 @@ export default function HomeScreen() {
           style={styles.secondaryButton}
           onPress={() => router.push('/add-stats')}
         >
-          <Home size={20} color={Colors.gold} />
+          <Home size={20} color={colors.gold} />
           <Text style={styles.secondaryButtonText}>Start a New Game</Text>
         </TouchableOpacity>
 
@@ -80,7 +83,7 @@ export default function HomeScreen() {
           style={styles.tertiaryButton}
           onPress={() => router.push('/history')}
         >
-          <History size={20} color={Colors.gold} />
+          <History size={20} color={colors.gold} />
           <Text style={styles.tertiaryButtonText}>Game History</Text>
         </TouchableOpacity>
       </View>
@@ -94,7 +97,7 @@ export default function HomeScreen() {
               onPress={() => router.push('/history')}
             >
               <Text style={styles.viewAllText}>View All</Text>
-              <ChevronRight size={14} color={Colors.gold} />
+              <ChevronRight size={14} color={colors.gold} />
             </TouchableOpacity>
           </View>
           {recentGames.map((session) => (
@@ -164,7 +167,8 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(Colors: ThemeColors) {
+  return StyleSheet.create({
   outerContainer: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -403,3 +407,5 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
   },
 });
+}
+

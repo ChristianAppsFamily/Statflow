@@ -14,6 +14,7 @@ const HIGHLIGHTS_KEY = 'statflow_highlights';
 const defaultSettings: AppSettings = {
   dailyVerseEnabled: true,
   hapticsEnabled: true,
+  themeMode: 'dark',
 };
 
 export const [AppProvider, useApp] = createContextHook(() => {
@@ -31,7 +32,18 @@ export const [AppProvider, useApp] = createContextHook(() => {
     queryKey: ['settings'],
     queryFn: async () => {
       const stored = await AsyncStorage.getItem(SETTINGS_KEY);
-      return stored ? JSON.parse(stored) : defaultSettings;
+      if (!stored) return defaultSettings;
+      const parsed = JSON.parse(stored) as Partial<AppSettings>;
+      return {
+        ...defaultSettings,
+        ...parsed,
+        themeMode:
+          parsed.themeMode === 'light' ||
+          parsed.themeMode === 'dark' ||
+          parsed.themeMode === 'system'
+            ? parsed.themeMode
+            : defaultSettings.themeMode,
+      };
     },
   });
 

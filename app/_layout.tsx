@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useState } from "react";
-import { Platform, StyleSheet } from "react-native";
+import { Platform, StatusBar, StyleSheet } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { AppProvider } from "@/contexts/AppContext";
@@ -10,7 +10,7 @@ import { PlayerProvider } from "@/contexts/PlayerContext";
 import { SubscriptionProvider } from "@/contexts/SubscriptionContext";
 import { initializeAds, showInterstitialAd, hasInterstitialCooldownPassed } from "@/services/ads";
 import ATTPermissionScreen from "@/components/ATTPermissionScreen";
-import { Colors } from "@/constants/colors";
+import { useThemeColors } from "@/hooks/useThemeColors";
 
 const APP_OPENS_LIFETIME_KEY = "statflow_app_opens_lifetime";
 const FIRST_OPEN_COMPLETED_KEY = "statflow_first_open_completed";
@@ -56,28 +56,35 @@ void SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
+  const { colors, resolvedScheme } = useThemeColors();
+
   return (
-    <Stack screenOptions={{ headerBackTitle: "Back" }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen 
-        name="session-detail" 
-        options={{ 
-          title: "Game Details",
-          headerStyle: { backgroundColor: Colors.background },
-          headerTintColor: Colors.gold,
-          headerTitleStyle: { color: Colors.textPrimary },
-        }} 
-      />
-      <Stack.Screen 
-        name="privacy-policy" 
-        options={{ 
-          title: "Privacy Policy",
-          headerStyle: { backgroundColor: Colors.background },
-          headerTintColor: Colors.gold,
-          headerTitleStyle: { color: Colors.textPrimary },
-        }} 
-      />
-    </Stack>
+    <>
+      <StatusBar barStyle={resolvedScheme === "light" ? "dark-content" : "light-content"} />
+      <Stack screenOptions={{ headerBackTitle: "Back" }}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="session-detail"
+          options={{
+            title: "Game Details",
+            headerStyle: { backgroundColor: colors.background },
+            headerTintColor: colors.gold,
+            headerTitleStyle: { color: colors.textPrimary },
+            contentStyle: { backgroundColor: colors.background },
+          }}
+        />
+        <Stack.Screen
+          name="privacy-policy"
+          options={{
+            title: "Privacy Policy",
+            headerStyle: { backgroundColor: colors.background },
+            headerTintColor: colors.gold,
+            headerTitleStyle: { color: colors.textPrimary },
+            contentStyle: { backgroundColor: colors.background },
+          }}
+        />
+      </Stack>
+    </>
   );
 }
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,8 @@ import {
   Linking,
   TouchableOpacity,
 } from 'react-native';
-import { Colors } from '@/constants/colors';
+import { ThemeColors } from '@/constants/colors';
+import { useThemeColors } from '@/hooks/useThemeColors';
 
 const SECTIONS = [
   {
@@ -120,7 +121,15 @@ const SECTIONS = [
   },
 ];
 
-function LinkButton({ label, url }: { label: string; url: string }) {
+function LinkButton({
+  label,
+  url,
+  styles,
+}: {
+  label: string;
+  url: string;
+  styles: ReturnType<typeof createStyles>;
+}) {
   return (
     <TouchableOpacity
       onPress={() => {
@@ -134,6 +143,8 @@ function LinkButton({ label, url }: { label: string; url: string }) {
 }
 
 export default function PrivacyPolicyScreen() {
+  const { colors } = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <ScrollView
       style={styles.container}
@@ -186,7 +197,7 @@ export default function PrivacyPolicyScreen() {
                   <Text style={styles.footerNote}>{sub.footer}</Text>
                 )}
                 {'link' in sub && sub.link && (
-                  <LinkButton label={sub.link.label} url={sub.link.url} />
+                  <LinkButton label={sub.link.label} url={sub.link.url} styles={styles} />
                 )}
               </View>
             ))}
@@ -199,7 +210,8 @@ export default function PrivacyPolicyScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(Colors: ThemeColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -306,3 +318,5 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 });
+}
+

@@ -14,13 +14,16 @@ import { useApp } from '@/contexts/AppContext';
 import { usePlayers } from '@/contexts/PlayerContext';
 import { SPORTS_CONFIG } from '@/constants/sports';
 import { Sport, Session } from '@/types';
-import { Colors } from '@/constants/colors';
+import { ThemeColors } from '@/constants/colors';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import BannerAdComponent from '@/components/BannerAd';
 import { formatSessionDate } from '@/utils/sessionDate';
 
 type FilterOption = 'all' | Sport;
 
 export default function HistoryScreen() {
+  const { colors } = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { sessions, highlights } = useApp();
   const { activePlayerId, players } = usePlayers();
@@ -163,7 +166,7 @@ export default function HistoryScreen() {
                       )}
                       {sessionHighlightMap.has(item.id) && (
                         <View style={styles.highlightBadge}>
-                          <Star size={10} color={Colors.gold} />
+                          <Star size={10} color={colors.gold} />
                         </View>
                       )}
                     </View>
@@ -205,7 +208,8 @@ export default function HistoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(Colors: ThemeColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -383,3 +387,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 });
+}
+

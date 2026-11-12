@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -27,8 +27,16 @@ import { openAppStoreReview } from '@/services/appReview';
 import { BackupError, exportBackup, importBackup } from '@/services/backup';
 import { useApp } from '@/contexts/AppContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import { Colors } from '@/constants/colors';
+import { ThemeColors } from '@/constants/colors';
+import { useThemeColors } from '@/hooks/useThemeColors';
+import { ThemeMode } from '@/types';
 import BannerAdComponent from '@/components/BannerAd';
+
+const THEME_OPTIONS: { value: ThemeMode; label: string }[] = [
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+  { value: 'system', label: 'System' },
+];
 
 export default function SettingsScreen() {
   const { settings, updateSettings, resetAllData } = useApp();
@@ -42,6 +50,8 @@ export default function SettingsScreen() {
     purchaseError,
     isLoading,
   } = useSubscription();
+  const { colors, themeMode, setThemeMode } = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -262,7 +272,7 @@ export default function SettingsScreen() {
           <Switch
             value={settings.dailyVerseEnabled}
             onValueChange={(value) => updateSettings({ dailyVerseEnabled: value })}
-            trackColor={{ false: Colors.switchTrackOff, true: Colors.switchTrackOn }}
+            trackColor={{ false: colors.switchTrackOff, true: colors.switchTrackOn }}
             thumbColor="#ffffff"
           />
         </View>
@@ -277,9 +287,34 @@ export default function SettingsScreen() {
           <Switch
             value={settings.hapticsEnabled}
             onValueChange={(value) => updateSettings({ hapticsEnabled: value })}
-            trackColor={{ false: Colors.switchTrackOff, true: Colors.switchTrackOn }}
+            trackColor={{ false: colors.switchTrackOff, true: colors.switchTrackOn }}
             thumbColor="#ffffff"
           />
+        </View>
+
+        <View style={styles.appearanceBlock}>
+          <Text style={styles.settingLabel}>Appearance</Text>
+          <Text style={styles.settingDescription}>
+            Dark keeps the navy look. Light uses a white background.
+          </Text>
+          <View style={styles.segmentedControl}>
+            {THEME_OPTIONS.map((option) => {
+              const selected = themeMode === option.value;
+              return (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[styles.segment, selected && styles.segmentSelected]}
+                  onPress={() => setThemeMode(option.value)}
+                  activeOpacity={0.85}
+                  testID={`theme-${option.value}-button`}
+                >
+                  <Text style={[styles.segmentText, selected && styles.segmentTextSelected]}>
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
       </View>
 
@@ -295,7 +330,7 @@ export default function SettingsScreen() {
 
           {isAdFree ? (
             <View style={styles.unlockedContainer} testID="ad-free-unlocked">
-              <CheckCircle size={24} color={Colors.green} />
+              <CheckCircle size={24} color={colors.green} />
               <Text style={styles.unlockedText}>Ad-Free Unlocked</Text>
             </View>
           ) : (
@@ -308,9 +343,9 @@ export default function SettingsScreen() {
                 testID="upgrade-to-support-button"
               >
                 {isPurchasing ? (
-                  <ActivityIndicator color={Colors.navy} size="small" />
+                  <ActivityIndicator color={colors.navy} size="small" />
                 ) : isLoading ? (
-                  <ActivityIndicator color={Colors.navy} size="small" />
+                  <ActivityIndicator color={colors.navy} size="small" />
                 ) : (
                   <Text style={styles.primaryActionButtonText}>Upgrade to Support</Text>
                 )}
@@ -327,10 +362,10 @@ export default function SettingsScreen() {
             testID="restore-purchases-button"
           >
             {isRestoring ? (
-              <ActivityIndicator color={Colors.gold} size="small" />
+              <ActivityIndicator color={colors.gold} size="small" />
             ) : (
               <>
-                <RefreshCw size={16} color={Colors.gold} />
+                <RefreshCw size={16} color={colors.gold} />
                 <Text style={styles.restoreButtonText}>Restore Purchases</Text>
               </>
             )}
@@ -360,10 +395,10 @@ export default function SettingsScreen() {
           testID="rate-app-button"
         >
           <View style={styles.policyButtonInner}>
-            <Star size={20} color={Colors.gold} />
+            <Star size={20} color={colors.gold} />
             <Text style={styles.policyButtonText}>Rate This App</Text>
           </View>
-          <ExternalLink size={16} color={Colors.textSecondary} />
+          <ExternalLink size={16} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -382,9 +417,9 @@ export default function SettingsScreen() {
         >
           <View style={styles.policyButtonInner}>
             {isExporting ? (
-              <ActivityIndicator size="small" color={Colors.gold} />
+              <ActivityIndicator size="small" color={colors.gold} />
             ) : (
-              <Upload size={20} color={Colors.gold} />
+              <Upload size={20} color={colors.gold} />
             )}
             <Text style={styles.policyButtonText}>
               {isExporting ? 'Exporting…' : 'Export Backup'}
@@ -401,9 +436,9 @@ export default function SettingsScreen() {
         >
           <View style={styles.policyButtonInner}>
             {isImporting ? (
-              <ActivityIndicator size="small" color={Colors.gold} />
+              <ActivityIndicator size="small" color={colors.gold} />
             ) : (
-              <Download size={20} color={Colors.gold} />
+              <Download size={20} color={colors.gold} />
             )}
             <Text style={styles.policyButtonText}>
               {isImporting ? 'Importing…' : 'Import Backup'}
@@ -422,10 +457,10 @@ export default function SettingsScreen() {
           testID="privacy-policy-button"
         >
           <View style={styles.policyButtonInner}>
-            <Shield size={20} color={Colors.gold} />
+            <Shield size={20} color={colors.gold} />
             <Text style={styles.policyButtonText}>Privacy Policy</Text>
           </View>
-          <ExternalLink size={16} color={Colors.textSecondary} />
+          <ExternalLink size={16} color={colors.textSecondary} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -435,7 +470,7 @@ export default function SettingsScreen() {
           testID="contact-support-button"
         >
           <View style={styles.policyButtonInner}>
-            <ExternalLink size={20} color={Colors.gold} />
+            <ExternalLink size={20} color={colors.gold} />
             <Text style={styles.policyButtonText}>Contact Support</Text>
           </View>
         </TouchableOpacity>
@@ -457,7 +492,8 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(Colors: ThemeColors) {
+  return StyleSheet.create({
   outerContainer: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -509,6 +545,38 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     lineHeight: 18,
+  },
+  appearanceBlock: {
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  segmentedControl: {
+    flexDirection: 'row',
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: Colors.gold,
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  segment: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  segmentSelected: {
+    backgroundColor: Colors.gold,
+  },
+  segmentText: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: Colors.gold,
+  },
+  segmentTextSelected: {
+    color: Colors.navy,
   },
   dangerButton: {
     backgroundColor: Colors.card,
@@ -670,3 +738,4 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
 });
+}

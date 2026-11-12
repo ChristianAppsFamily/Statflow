@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -19,7 +19,8 @@ import { SPORTS_CONFIG, SPORT_OPTIONS } from '@/constants/sports';
 import { useApp } from '@/contexts/AppContext';
 import { usePlayers } from '@/contexts/PlayerContext';
 import { Sport, Session, GameOutcome, Highlight } from '@/types';
-import { Colors } from '@/constants/colors';
+import { ThemeColors } from '@/constants/colors';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showInterstitialAd } from '@/services/ads';
 import BannerAdComponent from '@/components/BannerAd';
@@ -40,6 +41,8 @@ async function incrementDailyGames(): Promise<number> {
 }
 
 export default function AddStatsScreen() {
+  const { colors } = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { addSession, settings, addHighlights } = useApp();
   const { activePlayerId, players } = usePlayers();
@@ -209,7 +212,7 @@ export default function AddStatsScreen() {
         <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + 16 }]}>
           <View style={styles.noPlayerState}>
             <View style={styles.noPlayerIconCircle}>
-              <UserPlus size={40} color={Colors.gold} />
+              <UserPlus size={40} color={colors.gold} />
             </View>
             <Text style={styles.noPlayerTitle}>Create a Player First</Text>
             <Text style={styles.noPlayerSubtitle}>
@@ -219,7 +222,7 @@ export default function AddStatsScreen() {
               style={styles.noPlayerButton}
               onPress={() => router.push('/players')}
             >
-              <UserPlus size={20} color={Colors.navy} />
+              <UserPlus size={20} color={colors.navy} />
               <Text style={styles.noPlayerButtonText}>Go to Players</Text>
             </TouchableOpacity>
           </View>
@@ -293,7 +296,7 @@ export default function AddStatsScreen() {
             value={date}
             onChangeText={setDate}
             placeholder="YYYY-MM-DD"
-            placeholderTextColor={Colors.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             returnKeyType="done"
             blurOnSubmit
             onSubmitEditing={Keyboard.dismiss}
@@ -307,7 +310,7 @@ export default function AddStatsScreen() {
             value={opponent}
             onChangeText={setOpponent}
             placeholder="Team name or opponent"
-            placeholderTextColor={Colors.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             returnKeyType="done"
             blurOnSubmit
             onSubmitEditing={Keyboard.dismiss}
@@ -321,7 +324,7 @@ export default function AddStatsScreen() {
             value={notes}
             onChangeText={setNotes}
             placeholder="Game notes, feelings, etc."
-            placeholderTextColor={Colors.textSecondary}
+            placeholderTextColor={colors.textSecondary}
             multiline
             numberOfLines={3}
             blurOnSubmit
@@ -387,7 +390,7 @@ export default function AddStatsScreen() {
               value={teamScore}
               onChangeText={(text) => setTeamScore(text.replace(/[^0-9]/g, ''))}
               placeholder="0"
-              placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               keyboardType="number-pad"
             />
           </View>
@@ -399,7 +402,7 @@ export default function AddStatsScreen() {
               value={opponentScore}
               onChangeText={(text) => setOpponentScore(text.replace(/[^0-9]/g, ''))}
               placeholder="0"
-              placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               keyboardType="number-pad"
             />
           </View>
@@ -419,14 +422,14 @@ export default function AddStatsScreen() {
                 style={styles.statButton}
                 onPress={() => updateStat(stat.key, -1)}
               >
-                <Minus size={20} color={Colors.red} />
+                <Minus size={20} color={colors.red} />
               </TouchableOpacity>
               <Text style={styles.statValue}>{stats[stat.key] || 0}</Text>
               <TouchableOpacity
                 style={styles.statButton}
                 onPress={() => updateStat(stat.key, 1)}
               >
-                <Plus size={20} color={Colors.green} />
+                <Plus size={20} color={colors.green} />
               </TouchableOpacity>
             </View>
           </View>
@@ -450,20 +453,20 @@ export default function AddStatsScreen() {
                   });
                 }}
               >
-                <X size={16} color={Colors.red} />
+                <X size={16} color={colors.red} />
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.statButton}
                 onPress={() => updateStat(stat.key, -1)}
               >
-                <Minus size={20} color={Colors.red} />
+                <Minus size={20} color={colors.red} />
               </TouchableOpacity>
               <Text style={styles.statValue}>{stats[stat.key] || 0}</Text>
               <TouchableOpacity
                 style={styles.statButton}
                 onPress={() => updateStat(stat.key, 1)}
               >
-                <Plus size={20} color={Colors.green} />
+                <Plus size={20} color={colors.green} />
               </TouchableOpacity>
             </View>
           </View>
@@ -476,7 +479,7 @@ export default function AddStatsScreen() {
               value={customStatName}
               onChangeText={setCustomStatName}
               placeholder="Stat name (e.g. Steals)"
-              placeholderTextColor={Colors.textSecondary}
+              placeholderTextColor={colors.textSecondary}
               autoFocus
               onSubmitEditing={() => {
                 const name = customStatName.trim();
@@ -501,7 +504,7 @@ export default function AddStatsScreen() {
                 setShowCustomInput(false);
               }}
             >
-              <Plus size={20} color={Colors.gold} />
+              <Plus size={20} color={colors.gold} />
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.customAddCancel}
@@ -510,7 +513,7 @@ export default function AddStatsScreen() {
                 setCustomStatName('');
               }}
             >
-              <X size={20} color={Colors.textSecondary} />
+              <X size={20} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
         ) : (
@@ -518,7 +521,7 @@ export default function AddStatsScreen() {
             style={styles.addCustomButton}
             onPress={() => setShowCustomInput(true)}
           >
-            <Plus size={18} color={Colors.gold} />
+            <Plus size={18} color={colors.gold} />
             <Text style={styles.addCustomButtonText}>Add Custom Stat</Text>
           </TouchableOpacity>
         )}
@@ -529,7 +532,7 @@ export default function AddStatsScreen() {
         {gameHighlights.map((hl, idx) => (
           <View key={idx} style={styles.hlCard}>
             <View style={styles.hlCardIcon}>
-              <Link size={14} color={Colors.gold} />
+              <Link size={14} color={colors.gold} />
             </View>
             <View style={styles.hlCardContent}>
               <Text style={styles.hlCardTitle} numberOfLines={1}>{hl.title}</Text>
@@ -539,7 +542,7 @@ export default function AddStatsScreen() {
               style={styles.hlRemoveBtn}
               onPress={() => setGameHighlights((prev) => prev.filter((_, i) => i !== idx))}
             >
-              <X size={14} color={Colors.red} />
+              <X size={14} color={colors.red} />
             </TouchableOpacity>
           </View>
         ))}
@@ -549,7 +552,7 @@ export default function AddStatsScreen() {
             <View style={styles.hlFormHeader}>
               <Text style={styles.hlFormTitle}>Add Highlight Link</Text>
               <TouchableOpacity onPress={() => { setShowHighlightForm(false); setHlTitle(''); setHlUrl(''); setHlNotes(''); }}>
-                <X size={18} color={Colors.textSecondary} />
+                <X size={18} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
             <View style={styles.hlInputGroup}>
@@ -559,7 +562,7 @@ export default function AddStatsScreen() {
                 value={hlTitle}
                 onChangeText={setHlTitle}
                 placeholder="e.g., Game-winning shot"
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 returnKeyType="done"
                 blurOnSubmit
               />
@@ -571,7 +574,7 @@ export default function AddStatsScreen() {
                 value={hlUrl}
                 onChangeText={setHlUrl}
                 placeholder="https://youtube.com/..."
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 keyboardType="url"
                 autoCapitalize="none"
                 returnKeyType="done"
@@ -585,7 +588,7 @@ export default function AddStatsScreen() {
                 value={hlNotes}
                 onChangeText={setHlNotes}
                 placeholder="Add notes..."
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 multiline
                 numberOfLines={2}
                 blurOnSubmit
@@ -613,7 +616,7 @@ export default function AddStatsScreen() {
                 }
               }}
             >
-              <Plus size={16} color={Colors.navy} />
+              <Plus size={16} color={colors.navy} />
               <Text style={styles.hlSaveBtnText}>Add Highlight</Text>
             </TouchableOpacity>
           </View>
@@ -622,7 +625,7 @@ export default function AddStatsScreen() {
             style={styles.addHighlightButton}
             onPress={() => setShowHighlightForm(true)}
           >
-            <Star size={16} color={Colors.gold} />
+            <Star size={16} color={colors.gold} />
             <Text style={styles.addHighlightButtonText}>Add Game Highlight</Text>
           </TouchableOpacity>
         )}
@@ -630,11 +633,11 @@ export default function AddStatsScreen() {
 
       <View style={styles.actions}>
         <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-          <RotateCcw size={18} color={Colors.textSecondary} />
+          <RotateCcw size={18} color={colors.textSecondary} />
           <Text style={styles.resetButtonText}>Reset</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Save size={20} color={Colors.navy} />
+          <Save size={20} color={colors.navy} />
           <Text style={styles.saveButtonText}>Save Session</Text>
         </TouchableOpacity>
       </View>
@@ -644,7 +647,8 @@ export default function AddStatsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(Colors: ThemeColors) {
+  return StyleSheet.create({
   noPlayerContainer: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -1115,3 +1119,5 @@ const styles = StyleSheet.create({
     color: Colors.navy,
   },
 });
+}
+

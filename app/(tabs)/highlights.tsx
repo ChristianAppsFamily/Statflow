@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useMemo, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -22,7 +22,8 @@ import { useApp } from '@/contexts/AppContext';
 import { usePlayers } from '@/contexts/PlayerContext';
 import { Highlight, Sport } from '@/types';
 import { SPORTS_CONFIG } from '@/constants/sports';
-import { Colors } from '@/constants/colors';
+import { ThemeColors } from '@/constants/colors';
+import { useThemeColors } from '@/hooks/useThemeColors';
 import { formatSessionDate } from '@/utils/sessionDate';
 import { persistLocalFile } from '@/utils/mediaPersist';
 
@@ -31,6 +32,8 @@ type AddMode = 'none' | 'link' | 'file';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function HighlightsScreen() {
+  const { colors } = useThemeColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const { highlights, addHighlight, updateHighlight, deleteHighlight, sessions, settings } = useApp();
   const { activePlayerId } = usePlayers();
 
@@ -237,14 +240,14 @@ export default function HighlightsScreen() {
               style={styles.addButton}
               onPress={() => setAddMode('link')}
             >
-              <Link size={24} color={Colors.gold} />
+              <Link size={24} color={colors.gold} />
               <Text style={styles.addButtonText}>Add Video Link</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.addButton}
               onPress={() => setAddMode('file')}
             >
-              <VideoIcon size={24} color={Colors.gold} />
+              <VideoIcon size={24} color={colors.gold} />
               <Text style={styles.addButtonText}>Upload Video</Text>
             </TouchableOpacity>
           </View>
@@ -255,7 +258,7 @@ export default function HighlightsScreen() {
                 {addMode === 'link' ? 'Add Video Link' : 'Upload Video'}
               </Text>
               <TouchableOpacity onPress={resetForm}>
-                <X size={24} color={Colors.textSecondary} />
+                <X size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
@@ -266,7 +269,7 @@ export default function HighlightsScreen() {
                 value={title}
                 onChangeText={setTitle}
                 placeholder="e.g., Game-winning shot"
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 returnKeyType="done"
                 blurOnSubmit
               />
@@ -280,7 +283,7 @@ export default function HighlightsScreen() {
                   value={url}
                   onChangeText={setUrl}
                   placeholder="https://youtube.com/..."
-                  placeholderTextColor={Colors.textSecondary}
+                  placeholderTextColor={colors.textSecondary}
                   keyboardType="url"
                   autoCapitalize="none"
                   returnKeyType="done"
@@ -321,7 +324,7 @@ export default function HighlightsScreen() {
                 value={notes}
                 onChangeText={setNotes}
                 placeholder="Add any notes about this highlight..."
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor={colors.textSecondary}
                 multiline
                 numberOfLines={3}
                 blurOnSubmit
@@ -333,7 +336,7 @@ export default function HighlightsScreen() {
               style={styles.saveButton}
               onPress={addMode === 'link' ? handleAddLink : handlePickVideo}
             >
-              <Plus size={20} color={Colors.navy} />
+              <Plus size={20} color={colors.navy} />
               <Text style={styles.saveButtonText}>
                 {addMode === 'link' ? 'Save Link' : 'Choose Video'}
               </Text>
@@ -350,7 +353,7 @@ export default function HighlightsScreen() {
                   <View style={styles.editCardHeader}>
                     <Text style={styles.editCardTitle}>Edit Highlight</Text>
                     <TouchableOpacity onPress={cancelEdit}>
-                      <X size={20} color={Colors.textSecondary} />
+                      <X size={20} color={colors.textSecondary} />
                     </TouchableOpacity>
                   </View>
                   <View style={styles.inputGroup}>
@@ -360,7 +363,7 @@ export default function HighlightsScreen() {
                       value={editTitle}
                       onChangeText={setEditTitle}
                       placeholder="Highlight title"
-                      placeholderTextColor={Colors.textSecondary}
+                      placeholderTextColor={colors.textSecondary}
                       returnKeyType="done"
                       blurOnSubmit
                     />
@@ -373,7 +376,7 @@ export default function HighlightsScreen() {
                         value={editUrl}
                         onChangeText={setEditUrl}
                         placeholder="https://..."
-                        placeholderTextColor={Colors.textSecondary}
+                        placeholderTextColor={colors.textSecondary}
                         keyboardType="url"
                         autoCapitalize="none"
                         returnKeyType="done"
@@ -388,7 +391,7 @@ export default function HighlightsScreen() {
                       value={editNotes}
                       onChangeText={setEditNotes}
                       placeholder="Notes..."
-                      placeholderTextColor={Colors.textSecondary}
+                      placeholderTextColor={colors.textSecondary}
                       multiline
                       numberOfLines={2}
                       blurOnSubmit
@@ -400,7 +403,7 @@ export default function HighlightsScreen() {
                       <Text style={styles.editCancelText}>Cancel</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.editSaveBtn} onPress={saveEdit}>
-                      <Save size={18} color={Colors.navy} />
+                      <Save size={18} color={colors.navy} />
                       <Text style={styles.editSaveText}>Save</Text>
                     </TouchableOpacity>
                   </View>
@@ -409,9 +412,9 @@ export default function HighlightsScreen() {
                 <View key={highlight.id} style={styles.highlightCard}>
                   <View style={styles.highlightIcon}>
                     {highlight.type === 'link' ? (
-                      <Link size={20} color={Colors.gold} />
+                      <Link size={20} color={colors.gold} />
                     ) : (
-                      <VideoIcon size={20} color={Colors.gold} />
+                      <VideoIcon size={20} color={colors.gold} />
                     )}
                   </View>
                   <View style={styles.highlightContent}>
@@ -445,14 +448,14 @@ export default function HighlightsScreen() {
                       style={styles.actionButton}
                       onPress={() => startEdit(highlight)}
                     >
-                      <Edit2 size={18} color={Colors.gold} />
+                      <Edit2 size={18} color={colors.gold} />
                     </TouchableOpacity>
                     {highlight.type === 'link' && highlight.url && (
                       <TouchableOpacity
                         style={styles.actionButton}
                         onPress={() => handleOpenLink(highlight.url!)}
                       >
-                        <ExternalLink size={18} color={Colors.gold} />
+                        <ExternalLink size={18} color={colors.gold} />
                       </TouchableOpacity>
                     )}
                     {highlight.type === 'file' && highlight.localUri && (
@@ -460,14 +463,14 @@ export default function HighlightsScreen() {
                         style={styles.actionButton}
                         onPress={() => handlePlayVideo(highlight.localUri!)}
                       >
-                        <Play size={18} color={Colors.gold} />
+                        <Play size={18} color={colors.gold} />
                       </TouchableOpacity>
                     )}
                     <TouchableOpacity
                       style={styles.actionButton}
                       onPress={() => handleDeleteHighlight(highlight.id, highlight.title)}
                     >
-                      <Trash2 size={18} color={Colors.red} />
+                      <Trash2 size={18} color={colors.red} />
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -478,7 +481,7 @@ export default function HighlightsScreen() {
 
         {playerHighlights.length === 0 && addMode === 'none' && (
           <View style={styles.emptyState}>
-            <VideoIcon size={48} color={Colors.cardBorder} />
+            <VideoIcon size={48} color={colors.cardBorder} />
             <Text style={styles.emptyTitle}>No Highlights Yet</Text>
             <Text style={styles.emptySubtitle}>
               Add video links or upload your best plays to save them here.
@@ -496,7 +499,7 @@ export default function HighlightsScreen() {
         <View style={styles.videoModalContainer}>
           <View style={[styles.videoModalHeader, { paddingTop: insets.top + 8 }]}>
             <TouchableOpacity style={styles.videoCloseButton} onPress={handleCloseVideoModal}>
-              <X size={24} color={Colors.textPrimary} />
+              <X size={24} color={colors.textPrimary} />
             </TouchableOpacity>
             <Text style={styles.videoModalTitle}>Playing Highlight</Text>
             <View style={{ width: 40 }} />
@@ -525,7 +528,8 @@ export default function HighlightsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(Colors: ThemeColors) {
+  return StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
@@ -837,3 +841,5 @@ const styles = StyleSheet.create({
     height: SCREEN_WIDTH * (9 / 16),
   },
 });
+}
+

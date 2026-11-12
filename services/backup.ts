@@ -4,7 +4,7 @@ import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 
-import { AppSettings, Highlight, PlayerProfile, Session } from '@/types';
+import { AppSettings, Highlight, PlayerProfile, Session, ThemeMode } from '@/types';
 
 const SESSIONS_KEY = 'statflow_sessions';
 const SETTINGS_KEY = 'statflow_settings';
@@ -17,7 +17,15 @@ const BACKUP_VERSION = 1;
 const defaultSettings: AppSettings = {
   dailyVerseEnabled: true,
   hapticsEnabled: true,
+  themeMode: 'dark',
 };
+
+function parseThemeMode(value: unknown): ThemeMode {
+  if (value === 'light' || value === 'dark' || value === 'system') {
+    return value;
+  }
+  return defaultSettings.themeMode;
+}
 
 export type BackupPayload = {
   version: number;
@@ -67,6 +75,7 @@ function parseSettings(raw: string | null): AppSettings {
         typeof parsed.hapticsEnabled === 'boolean'
           ? parsed.hapticsEnabled
           : defaultSettings.hapticsEnabled,
+      themeMode: parseThemeMode(parsed.themeMode),
     };
   } catch {
     return { ...defaultSettings };
@@ -123,6 +132,7 @@ function validateBackup(parsed: unknown): BackupPayload {
           typeof settings.hapticsEnabled === 'boolean'
             ? settings.hapticsEnabled
             : defaultSettings.hapticsEnabled,
+        themeMode: parseThemeMode(settings.themeMode),
       },
       highlights: highlights as Highlight[],
       players: players as PlayerProfile[],
