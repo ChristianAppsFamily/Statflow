@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,6 @@ import {
   Alert,
   Modal,
   Platform,
-  KeyboardAvoidingView,
   Keyboard,
   Image,
 } from 'react-native';
@@ -75,6 +74,24 @@ export default function PlayersScreen() {
   const [primarySport, setPrimarySport] = useState<Sport | undefined>(undefined);
   const [teamName, setTeamName] = useState('');
   const [avatarUri, setAvatarUri] = useState<string | undefined>(undefined);
+  const modalScrollRef = useRef<ScrollView>(null);
+  const fieldOffsets = useRef<Record<string, number>>({});
+
+  const rememberFieldOffset = useCallback((key: string, y: number) => {
+    fieldOffsets.current[key] = y;
+  }, []);
+
+  const scrollFieldIntoView = useCallback((key: string) => {
+    const y = fieldOffsets.current[key];
+    if (y == null) return;
+    // Keep the focused field above the keyboard inside the page sheet
+    requestAnimationFrame(() => {
+      modalScrollRef.current?.scrollTo({
+        y: Math.max(0, y - 24),
+        animated: true,
+      });
+    });
+  }, []);
 
   const resetForm = useCallback(() => {
     setName('');
@@ -105,11 +122,12 @@ export default function PlayersScreen() {
   }, [players.length, settings.hapticsEnabled, router]);
 
   const selectPrimarySport = useCallback((sport: Sport) => {
-    Keyboard.dismiss();
     setPrimarySport(sport);
     if (settings.hapticsEnabled && Platform.OS !== 'web') {
       void Haptics.selectionAsync();
     }
+    // Dismiss after selection so the sheet does not jump before the chip sticks
+    requestAnimationFrame(() => Keyboard.dismiss());
   }, [settings.hapticsEnabled]);
 
   const openEditModal = useCallback((player: PlayerProfile) => {
@@ -429,10 +447,7 @@ export default function PlayersScreen() {
         presentationStyle="pageSheet"
         onRequestClose={() => { setModalVisible(false); resetForm(); }}
       >
-        <KeyboardAvoidingView
-          style={styles.modalContainer}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
+        <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => { setModalVisible(false); resetForm(); }}>
               <X size={24} color={Colors.textSecondary} />
@@ -446,10 +461,12 @@ export default function PlayersScreen() {
           </View>
 
           <ScrollView
+            ref={modalScrollRef}
             style={styles.modalContent}
             contentContainerStyle={styles.modalContentContainer}
-            keyboardShouldPersistTaps="always"
-            keyboardDismissMode="on-drag"
+            keyboardShouldPersistTaps="handled"
+            automaticallyAdjustKeyboardInsets
+            keyboardDismissMode="interactive"
           >
             <View style={styles.photoSection}>
               <TouchableOpacity
@@ -537,7 +554,10 @@ export default function PlayersScreen() {
               </View>
             </View>
 
-            <View style={styles.formGroup}>
+            <View
+              style={styles.formGroup}
+              onLayout={(e) => rememberFieldOffset('teamName', e.nativeEvent.layout.y)}
+            >
               <Text style={styles.formLabel}>TEAM NAME</Text>
               <TextInput
                 style={styles.formInput}
@@ -545,17 +565,23 @@ export default function PlayersScreen() {
                 onChangeText={setTeamName}
                 placeholder="e.g. Eagles"
                 placeholderTextColor={Colors.textSecondary}
+                returnKeyType="done"
+                onFocus={() => scrollFieldIntoView('teamName')}
+                onSubmitEditing={Keyboard.dismiss}
               />
             </View>
 
-            <View style={styles.formGroup}>
+            <View
+              style={styles.formGroup}
+              onLayout={(e) => rememberFieldOffset('primarySport', e.nativeEvent.layout.y)}
+            >
               <Text style={styles.formLabel}>PRIMARY SPORT</Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 style={styles.sportScroll}
                 contentContainerStyle={styles.sportScrollContent}
-                keyboardShouldPersistTaps="always"
+                keyboardShouldPersistTaps="handled"
                 nestedScrollEnabled
               >
                 {SPORT_OPTIONS.map((sport) => {
@@ -590,7 +616,7 @@ export default function PlayersScreen() {
               </Text>
             </TouchableOpacity>
           </ScrollView>
-        </KeyboardAvoidingView>
+        </View>
       </Modal>
       {/* BOTTOM BANNER AD — Players section */}
       <BannerAdComponent position="bottom" />
@@ -852,7 +878,7 @@ const styles = StyleSheet.create({
   },
   modalContentContainer: {
     padding: 20,
-    paddingBottom: 60,
+    paddingBottom: 120,
   },
   formGroup: {
     marginBottom: 20,

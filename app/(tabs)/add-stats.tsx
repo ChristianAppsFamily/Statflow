@@ -327,13 +327,6 @@ export default function AddStatsScreen() {
             blurOnSubmit={false}
             textAlignVertical="top"
           />
-          <TouchableOpacity
-            style={styles.dismissKeyboardButton}
-            onPress={Keyboard.dismiss}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.dismissKeyboardText}>Done</Text>
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -742,16 +735,6 @@ const styles = StyleSheet.create({
   textArea: {
     minHeight: 80,
     textAlignVertical: 'top',
-  },
-  dismissKeyboardButton: {
-    alignSelf: 'flex-end',
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-  },
-  dismissKeyboardText: {
-    color: Colors.gold,
-    fontSize: 14,
-    fontWeight: '600' as const,
   },
   sectionTitle: {
     fontSize: 13,

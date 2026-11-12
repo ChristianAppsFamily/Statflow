@@ -558,28 +558,19 @@ export default function SessionDetailScreen() {
         <View style={styles.notesCard}>
           <Text style={styles.notesLabel}>NOTES</Text>
           {isEditing ? (
-            <>
-              <TextInput
-                style={[styles.editInput, styles.textArea]}
-                value={editedSession?.notes || ''}
-                onChangeText={(text) =>
-                  setEditedSession((prev) => (prev ? { ...prev, notes: text } : null))
-                }
-                placeholder="Notes"
-                placeholderTextColor={Colors.textSecondary}
-                multiline
-                numberOfLines={3}
-                blurOnSubmit={false}
-                textAlignVertical="top"
-              />
-              <TouchableOpacity
-                style={styles.dismissKeyboardButton}
-                onPress={Keyboard.dismiss}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.dismissKeyboardText}>Done</Text>
-              </TouchableOpacity>
-            </>
+            <TextInput
+              style={[styles.editInput, styles.textArea]}
+              value={editedSession?.notes || ''}
+              onChangeText={(text) =>
+                setEditedSession((prev) => (prev ? { ...prev, notes: text } : null))
+              }
+              placeholder="Notes"
+              placeholderTextColor={Colors.textSecondary}
+              multiline
+              numberOfLines={3}
+              blurOnSubmit={false}
+              textAlignVertical="top"
+            />
           ) : (
             <Text style={styles.notesText}>{currentSession.notes}</Text>
           )}
@@ -1047,17 +1038,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600' as const,
     color: Colors.textPrimary,
-  },
-  dismissKeyboardButton: {
-    alignSelf: 'flex-end',
-    paddingVertical: 6,
-    paddingHorizontal: 4,
-    marginTop: 4,
-  },
-  dismissKeyboardText: {
-    color: Colors.gold,
-    fontSize: 14,
-    fontWeight: '600' as const,
   },
   notesCard: {
     backgroundColor: Colors.card,
