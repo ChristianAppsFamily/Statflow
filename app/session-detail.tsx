@@ -568,7 +568,9 @@ export default function SessionDetailScreen() {
               placeholderTextColor={Colors.textSecondary}
               multiline
               numberOfLines={3}
-              blurOnSubmit={false}
+              blurOnSubmit
+              returnKeyType="done"
+              onSubmitEditing={Keyboard.dismiss}
               textAlignVertical="top"
             />
           ) : (

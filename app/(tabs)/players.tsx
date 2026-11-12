@@ -19,7 +19,6 @@ import {
   Trash2,
   X,
   Check,
-  ChevronRight,
   Users,
   Shield,
   Camera,
@@ -432,7 +431,6 @@ export default function PlayersScreen() {
                     >
                       <Trash2 size={16} color={Colors.red} />
                     </TouchableOpacity>
-                    <ChevronRight size={16} color={Colors.textSecondary} />
                   </View>
                 </TouchableOpacity>
               );
