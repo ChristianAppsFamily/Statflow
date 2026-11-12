@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -13,8 +13,18 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { Shield, CheckCircle, RefreshCw, ExternalLink, Star } from 'lucide-react-native';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  Shield,
+  CheckCircle,
+  RefreshCw,
+  ExternalLink,
+  Star,
+  Download,
+  Upload,
+} from 'lucide-react-native';
 import { openAppStoreReview } from '@/services/appReview';
+import { BackupError, exportBackup, importBackup } from '@/services/backup';
 import { useApp } from '@/contexts/AppContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Colors } from '@/constants/colors';
@@ -34,6 +44,9 @@ export default function SettingsScreen() {
   } = useSubscription();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const instagramUrl = 'https://instagram.com/statflowapp';
   const privacyPolicyUrl = 'https://christianappsfamily.github.io/statflow-privacy/';
 
@@ -151,6 +164,82 @@ export default function SettingsScreen() {
         ]
       );
     }
+  };
+
+  const refreshAfterImport = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['sessions'] }),
+      queryClient.invalidateQueries({ queryKey: ['settings'] }),
+      queryClient.invalidateQueries({ queryKey: ['highlights'] }),
+      queryClient.invalidateQueries({ queryKey: ['players'] }),
+      queryClient.invalidateQueries({ queryKey: ['activePlayerId'] }),
+    ]);
+  };
+
+  const handleExportBackup = async () => {
+    if (isExporting || isImporting) return;
+    setIsExporting(true);
+    try {
+      await exportBackup();
+    } catch (error: unknown) {
+      const message =
+        error instanceof BackupError
+          ? error.message
+          : 'Could not export backup. Please try again.';
+      Alert.alert('Export Failed', message);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const runImportBackup = async () => {
+    if (isExporting || isImporting) return;
+    setIsImporting(true);
+    try {
+      const result = await importBackup();
+      if (!result) return;
+
+      await refreshAfterImport();
+      Alert.alert(
+        'Backup Restored',
+        `Restored ${result.sessionCount} game${result.sessionCount === 1 ? '' : 's'}, ${result.playerCount} player${result.playerCount === 1 ? '' : 's'}, and ${result.highlightCount} highlight${result.highlightCount === 1 ? '' : 's'}.`
+      );
+    } catch (error: unknown) {
+      const message =
+        error instanceof BackupError
+          ? error.message
+          : 'Could not import backup. Your current data was not changed.';
+      Alert.alert('Import Failed', message);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleImportBackup = () => {
+    if (isExporting || isImporting) return;
+
+    if (Platform.OS === 'web') {
+      Alert.alert(
+        'Not Available',
+        'Backup import is available in the iOS and Android apps.'
+      );
+      return;
+    }
+
+    Alert.alert(
+      'Import Backup',
+      'This replaces current data on this phone. Game stats and players restore; some photos/videos may need to be re-added.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Replace Data',
+          style: 'destructive',
+          onPress: () => {
+            void runImportBackup();
+          },
+        },
+      ]
+    );
   };
 
   const priceLabel = lifetimePackage?.product?.priceString ?? '$4.99';
@@ -279,6 +368,51 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
+        <Text style={styles.sectionTitle}>DATA</Text>
+        <Text style={styles.sectionSubtitle}>
+          Save a backup before deleting the app. Game stats and players restore; some photos/videos may need to be re-added.
+        </Text>
+
+        <TouchableOpacity
+          style={styles.policyButton}
+          onPress={() => { void handleExportBackup(); }}
+          activeOpacity={0.7}
+          disabled={isExporting || isImporting}
+          testID="export-backup-button"
+        >
+          <View style={styles.policyButtonInner}>
+            {isExporting ? (
+              <ActivityIndicator size="small" color={Colors.gold} />
+            ) : (
+              <Upload size={20} color={Colors.gold} />
+            )}
+            <Text style={styles.policyButtonText}>
+              {isExporting ? 'Exporting…' : 'Export Backup'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.policyButton, { marginTop: 12 }]}
+          onPress={handleImportBackup}
+          activeOpacity={0.7}
+          disabled={isExporting || isImporting}
+          testID="import-backup-button"
+        >
+          <View style={styles.policyButtonInner}>
+            {isImporting ? (
+              <ActivityIndicator size="small" color={Colors.gold} />
+            ) : (
+              <Download size={20} color={Colors.gold} />
+            )}
+            <Text style={styles.policyButtonText}>
+              {isImporting ? 'Importing…' : 'Import Backup'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.section}>
         <Text style={styles.sectionTitle}>LEGAL</Text>
         
         <TouchableOpacity
@@ -343,6 +477,13 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: Colors.textSecondary,
     letterSpacing: 1.5,
+    marginBottom: 16,
+  },
+  sectionSubtitle: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+    marginTop: -8,
     marginBottom: 16,
   },
   settingRow: {
