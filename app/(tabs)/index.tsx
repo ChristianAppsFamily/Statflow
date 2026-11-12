@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { Home, Users, ChevronRight, History } from 'lucide-react-native';
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useApp } from '@/contexts/AppContext';
 import { usePlayers } from '@/contexts/PlayerContext';
@@ -18,7 +18,7 @@ export default function HomeScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { settings, sessions } = useApp();
-  const { activePlayer, activePlayerId } = usePlayers();
+  const { activePlayer, activePlayerId, players } = usePlayers();
   const todaysVerse = useDailyVerse();
   const insets = useSafeAreaInsets();
 
@@ -28,6 +28,17 @@ export default function HomeScreen() {
       : sessions;
     return filtered.slice(0, 3);
   }, [sessions, activePlayerId]);
+
+  const getPlayerInitials = (name: string) => {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return parts[0].substring(0, 2).toUpperCase();
+  };
+
+  const getPlayerForSession = (playerId?: string) => {
+    if (!playerId) return null;
+    return players.find((p) => p.id === playerId) ?? null;
+  };
 
   const getTopStats = (session: Session) => {
     const config = SPORTS_CONFIG[session.sport];
@@ -112,7 +123,27 @@ export default function HomeScreen() {
               }
             >
               <View style={styles.recentCardTop}>
-                <Text style={styles.recentIcon}>{SPORTS_CONFIG[session.sport].icon}</Text>
+                {(() => {
+                  const player = getPlayerForSession(session.playerId);
+                  if (player?.avatarUri) {
+                    return (
+                      <Image
+                        source={{ uri: player.avatarUri }}
+                        style={styles.avatarImage}
+                      />
+                    );
+                  }
+                  if (player) {
+                    return (
+                      <View style={styles.initialsCircle}>
+                        <Text style={styles.initialsText}>
+                          {getPlayerInitials(player.name)}
+                        </Text>
+                      </View>
+                    );
+                  }
+                  return null;
+                })()}
                 <View style={styles.recentCardInfo}>
                   <View style={styles.recentCardNameRow}>
                     <Text style={styles.recentSport}>{SPORTS_CONFIG[session.sport].name}</Text>
@@ -315,8 +346,27 @@ function createStyles(Colors: ThemeColors) {
     gap: 10,
     marginBottom: 10,
   },
-  recentIcon: {
-    fontSize: 28,
+  initialsCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.goldFaded,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.gold,
+  },
+  avatarImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: Colors.gold,
+  },
+  initialsText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: Colors.gold,
   },
   recentCardInfo: {
     flex: 1,
@@ -360,7 +410,7 @@ function createStyles(Colors: ThemeColors) {
   recentStatsRow: {
     flexDirection: 'row',
     gap: 12,
-    paddingLeft: 38,
+    paddingLeft: 46,
   },
   recentStatItem: {
     alignItems: 'center',

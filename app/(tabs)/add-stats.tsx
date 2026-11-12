@@ -10,6 +10,7 @@ import {
   Alert,
   Keyboard,
   KeyboardAvoidingView,
+  InteractionManager,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Plus, Minus, Save, RotateCcw, X, UserPlus, Star, Link } from 'lucide-react-native';
@@ -180,30 +181,33 @@ export default function AddStatsScreen() {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
 
-    // Rule #3: Show interstitial after 3+ games saved in 24h
-    void incrementDailyGames().then((count) => {
-      console.log('[AddStats] Daily game count:', count);
-      if (count > 3) void showInterstitialAd();
-    });
-
-    setSelectedSport(null);
-    setStats({});
-    setOpponent('');
-    setNotes('');
-    setDate(getLocalDateString());
-    setOutcome(null);
-    setTeamScore('');
-    setOpponentScore('');
-    setCustomStats([]);
-    setShowCustomInput(false);
-    setCustomStatName('');
-    setGameHighlights([]);
-    setShowHighlightForm(false);
-    setHlTitle('');
-    setHlUrl('');
-    setHlNotes('');
-
+    // Navigate first so the form stays mounted under the transition
+    // (resetting selectedSport early flashes the sport picker).
     router.push('/history');
+
+    InteractionManager.runAfterInteractions(() => {
+      setSelectedSport(null);
+      setStats({});
+      setOpponent('');
+      setNotes('');
+      setDate(getLocalDateString());
+      setOutcome(null);
+      setTeamScore('');
+      setOpponentScore('');
+      setCustomStats([]);
+      setShowCustomInput(false);
+      setCustomStatName('');
+      setGameHighlights([]);
+      setShowHighlightForm(false);
+      setHlTitle('');
+      setHlUrl('');
+      setHlNotes('');
+
+      // Rule #3: Show interstitial after 3+ games saved in 24h
+      void incrementDailyGames().then((count) => {
+        if (count > 3) void showInterstitialAd();
+      });
+    });
   };
 
   if (!activePlayerId || players.length === 0) {
