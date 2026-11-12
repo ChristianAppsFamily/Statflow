@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Home, Users, ChevronRight } from 'lucide-react-native';
+import { Home, Users, ChevronRight, History } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -74,6 +74,14 @@ export default function HomeScreen() {
         >
           <Home size={20} color={Colors.gold} />
           <Text style={styles.secondaryButtonText}>Start a New Game</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.tertiaryButton}
+          onPress={() => router.push('/history')}
+        >
+          <History size={20} color={Colors.gold} />
+          <Text style={styles.tertiaryButtonText}>Game History</Text>
         </TouchableOpacity>
       </View>
 
@@ -171,8 +179,8 @@ const styles = StyleSheet.create({
   verseCard: {
     backgroundColor: Colors.card,
     borderRadius: 16,
-    padding: 24,
-    marginBottom: 24,
+    padding: 16,
+    marginBottom: 16,
     borderLeftWidth: 4,
     borderLeftColor: Colors.gold,
   },
@@ -181,17 +189,17 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: Colors.gold,
     letterSpacing: 1.5,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   verseText: {
-    fontSize: 18,
-    lineHeight: 28,
+    fontSize: 15,
+    lineHeight: 22,
     color: Colors.textPrimary,
-    marginBottom: 16,
+    marginBottom: 8,
     fontWeight: '500' as const,
   },
   verseReference: {
-    fontSize: 14,
+    fontSize: 12,
     color: Colors.gold,
     fontWeight: '600' as const,
   },
@@ -236,6 +244,23 @@ const styles = StyleSheet.create({
     color: Colors.gold,
     fontSize: 17,
     fontWeight: '700' as const,
+  },
+  tertiaryButton: {
+    backgroundColor: 'transparent',
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    borderWidth: 1,
+    borderColor: Colors.gold,
+  },
+  tertiaryButtonText: {
+    color: Colors.gold,
+    fontSize: 16,
+    fontWeight: '600' as const,
   },
 
   footer: {
