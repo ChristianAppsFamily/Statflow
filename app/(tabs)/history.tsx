@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   FlatList,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -43,13 +44,15 @@ export default function HistoryScreen() {
     return map;
   }, [highlights]);
 
-  const getPlayerInitials = (playerId?: string) => {
-    if (!playerId) return null;
-    const player = players.find((p) => p.id === playerId);
-    if (!player) return null;
-    const parts = player.name.trim().split(/\s+/);
+  const getPlayerInitials = (name: string) => {
+    const parts = name.trim().split(/\s+/);
     if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     return parts[0].substring(0, 2).toUpperCase();
+  };
+
+  const getPlayerForSession = (playerId?: string) => {
+    if (!playerId) return null;
+    return players.find((p) => p.id === playerId) ?? null;
   };
 
   const filteredSessions = useMemo(() => {
@@ -136,15 +139,31 @@ export default function HistoryScreen() {
             >
               <View style={styles.sessionHeader}>
                 <View style={styles.sessionTitleRow}>
-                  {getPlayerInitials(item.playerId) ? (
-                    <View style={styles.initialsCircle}>
-                      <Text style={styles.initialsText}>{getPlayerInitials(item.playerId)}</Text>
-                    </View>
-                  ) : (
-                    <Text style={styles.sessionIcon}>
-                      {SPORTS_CONFIG[item.sport].icon}
-                    </Text>
-                  )}
+                  {(() => {
+                    const player = getPlayerForSession(item.playerId);
+                    if (player?.avatarUri) {
+                      return (
+                        <Image
+                          source={{ uri: player.avatarUri }}
+                          style={styles.avatarImage}
+                        />
+                      );
+                    }
+                    if (player) {
+                      return (
+                        <View style={styles.initialsCircle}>
+                          <Text style={styles.initialsText}>
+                            {getPlayerInitials(player.name)}
+                          </Text>
+                        </View>
+                      );
+                    }
+                    return (
+                      <Text style={styles.sessionIcon}>
+                        {SPORTS_CONFIG[item.sport].icon}
+                      </Text>
+                    );
+                  })()}
                   <View style={styles.sessionInfo}>
                     <View style={styles.sportRow}>
                       <Text style={styles.sessionSport}>
@@ -370,6 +389,13 @@ function createStyles(Colors: ThemeColors) {
     backgroundColor: Colors.goldFaded,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: Colors.gold,
+  },
+  avatarImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: Colors.gold,
   },
