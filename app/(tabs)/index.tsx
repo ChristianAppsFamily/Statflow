@@ -12,6 +12,7 @@ import { SPORTS_CONFIG } from '@/constants/sports';
 import { Session } from '@/types';
 import BannerAdComponent from '@/components/BannerAd';
 import { formatSessionDate } from '@/utils/sessionDate';
+import { getSessionStatSummary } from '@/utils/sessionStats';
 
 export default function HomeScreen() {
   const { colors } = useThemeColors();
@@ -40,16 +41,7 @@ export default function HomeScreen() {
     return players.find((p) => p.id === playerId) ?? null;
   };
 
-  const getTopStats = (session: Session) => {
-    const config = SPORTS_CONFIG[session.sport];
-    const allStats = [
-      ...config.stats.map((stat) => ({ key: stat.key, shortLabel: stat.shortLabel })),
-      ...Object.keys(session.stats)
-        .filter((key) => !config.stats.some((s) => s.key === key))
-        .map((key) => ({ key, shortLabel: key.toUpperCase().slice(0, 3) })),
-    ];
-    return allStats.slice(0, 4);
-  };
+  const getTopStats = (session: Session) => getSessionStatSummary(session, 4);
 
   return (
     <View style={styles.outerContainer}>

@@ -25,6 +25,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { showInterstitialAd } from '@/services/ads';
 import BannerAdComponent from '@/components/BannerAd';
 import { getLocalDateString, toStoredSessionDate } from '@/utils/sessionDate';
+import { abbreviateCustomStatKey } from '@/utils/sessionStats';
 
 const DAILY_GAMES_KEY = 'statflow_daily_games';
 
@@ -453,7 +454,7 @@ export default function AddStatsScreen() {
           <View key={stat.key} style={styles.statRow}>
             <View style={styles.statInfo}>
               <Text style={styles.statLabel}>{stat.label}</Text>
-              <Text style={styles.statShort}>CUSTOM</Text>
+              <Text style={styles.statShort}>{abbreviateCustomStatKey(stat.key)}</Text>
             </View>
             <View style={styles.statControls}>
               <TouchableOpacity

@@ -10,6 +10,9 @@ export const SPORTS_CONFIG: Record<Sport, SportConfig> = {
       { key: 'assists', label: 'Assists', shortLabel: 'AST' },
       { key: 'steals', label: 'Steals', shortLabel: 'STL' },
       { key: 'blocks', label: 'Blocks', shortLabel: 'BLK' },
+      { key: 'deflections', label: 'Deflections', shortLabel: 'DEF' },
+      { key: 'turnovers', label: 'Turnovers', shortLabel: 'TO' },
+      { key: 'fouls', label: 'Fouls', shortLabel: 'PF' },
     ],
   },
   football: {

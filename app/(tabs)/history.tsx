@@ -19,6 +19,7 @@ import { ThemeColors } from '@/constants/colors';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import BannerAdComponent from '@/components/BannerAd';
 import { formatSessionDate } from '@/utils/sessionDate';
+import { getSessionStatSummary } from '@/utils/sessionStats';
 
 type FilterOption = 'all' | Sport;
 
@@ -60,17 +61,7 @@ export default function HistoryScreen() {
     return playerSessions.filter((s) => s.sport === filter);
   }, [playerSessions, filter]);
 
-  const getStatSummary = (session: Session) => {
-    const config = SPORTS_CONFIG[session.sport];
-    const allStats = [
-      ...config.stats.map((stat) => ({ key: stat.key, shortLabel: stat.shortLabel })),
-      ...Object.keys(session.stats)
-        .filter((key) => !config.stats.some((s) => s.key === key))
-        .map((key) => ({ key, shortLabel: key.toUpperCase().slice(0, 3) })),
-    ];
-    const topStats = allStats.slice(0, 6);
-    return topStats;
-  };
+  const getStatSummary = (session: Session) => getSessionStatSummary(session, 6);
 
   const filters: { value: FilterOption; label: string }[] = [
     { value: 'all', label: 'All' },
