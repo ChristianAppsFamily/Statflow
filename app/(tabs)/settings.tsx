@@ -57,7 +57,7 @@ export default function SettingsScreen() {
   const queryClient = useQueryClient();
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
-  const instagramUrl = 'https://instagram.com/statflowapp';
+  const moreAppsUrl = 'https://apps.apple.com/us/developer/christian-app-empire-llc/id787763898';
   const privacyPolicyUrl = 'https://christianappsfamily.github.io/statflow-privacy/';
 
   const handleSupportUpgrade = async () => {
@@ -108,17 +108,16 @@ export default function SettingsScreen() {
     }
   };
 
-  const handleJoinJourney = async () => {
-    console.log('[Settings] Join the Journey tapped');
+  const handleGetMoreApps = async () => {
     try {
-      const supported = await Linking.canOpenURL(instagramUrl);
+      const supported = await Linking.canOpenURL(moreAppsUrl);
       if (!supported) {
         Alert.alert('Unable to open link', 'Please try again in a moment.');
         return;
       }
-      await Linking.openURL(instagramUrl);
+      await Linking.openURL(moreAppsUrl);
     } catch {
-      Alert.alert('Error', 'Could not open Instagram.');
+      Alert.alert('Error', 'Could not open the App Store.');
     }
   };
 
@@ -375,13 +374,13 @@ export default function SettingsScreen() {
 
           <TouchableOpacity
             style={styles.secondaryActionButton}
-            onPress={() => { void handleJoinJourney(); }}
+            onPress={() => { void handleGetMoreApps(); }}
             activeOpacity={0.85}
-            testID="join-the-journey-button"
+            testID="get-more-apps-button"
           >
-            <Text style={styles.secondaryActionButtonText}>Join the Journey</Text>
+            <Text style={styles.secondaryActionButtonText}>Get More Apps</Text>
           </TouchableOpacity>
-          <Text style={styles.buttonSubtext}>Follow us on Instagram</Text>
+          <Text style={styles.buttonSubtext}>More apps from Christian App Empire</Text>
         </View>
       </View>
 
