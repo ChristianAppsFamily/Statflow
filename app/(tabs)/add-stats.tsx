@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,11 @@ import {
   Alert,
   Keyboard,
   KeyboardAvoidingView,
-  InteractionManager,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Plus, Minus, Save, RotateCcw, X, UserPlus, Star, Link } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { SPORTS_CONFIG, SPORT_OPTIONS } from '@/constants/sports';
 import { useApp } from '@/contexts/AppContext';
 import { usePlayers } from '@/contexts/PlayerContext';
@@ -65,8 +64,43 @@ export default function AddStatsScreen() {
   const [hlUrl, setHlUrl] = useState('');
   const [hlNotes, setHlNotes] = useState('');
   const [gameHighlights, setGameHighlights] = useState<{ title: string; url: string; notes?: string }[]>([]);
+  const shouldResetOnBlurRef = useRef(false);
 
   const sportConfig = selectedSport ? SPORTS_CONFIG[selectedSport] : null;
+
+  const resetForm = useCallback(() => {
+    setSelectedSport(null);
+    setStats({});
+    setOpponent('');
+    setNotes('');
+    setDate(getLocalDateString());
+    setOutcome(null);
+    setTeamScore('');
+    setOpponentScore('');
+    setCustomStats([]);
+    setShowCustomInput(false);
+    setCustomStatName('');
+    setGameHighlights([]);
+    setShowHighlightForm(false);
+    setHlTitle('');
+    setHlUrl('');
+    setHlNotes('');
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        if (!shouldResetOnBlurRef.current) return;
+        shouldResetOnBlurRef.current = false;
+        resetForm();
+
+        // Rule #3: Show interstitial after 3+ games saved in 24h
+        void incrementDailyGames().then((count) => {
+          if (count > 3) void showInterstitialAd();
+        });
+      };
+    }, [resetForm])
+  );
 
   const updateStat = (key: string, delta: number) => {
     if (settings.hapticsEnabled && Platform.OS !== 'web') {
@@ -181,33 +215,9 @@ export default function AddStatsScreen() {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
 
-    // Navigate first so the form stays mounted under the transition
-    // (resetting selectedSport early flashes the sport picker).
-    router.push('/history');
-
-    InteractionManager.runAfterInteractions(() => {
-      setSelectedSport(null);
-      setStats({});
-      setOpponent('');
-      setNotes('');
-      setDate(getLocalDateString());
-      setOutcome(null);
-      setTeamScore('');
-      setOpponentScore('');
-      setCustomStats([]);
-      setShowCustomInput(false);
-      setCustomStatName('');
-      setGameHighlights([]);
-      setShowHighlightForm(false);
-      setHlTitle('');
-      setHlUrl('');
-      setHlNotes('');
-
-      // Rule #3: Show interstitial after 3+ games saved in 24h
-      void incrementDailyGames().then((count) => {
-        if (count > 3) void showInterstitialAd();
-      });
-    });
+    // Reset only after this screen blurs so History covers Add Stats first.
+    shouldResetOnBlurRef.current = true;
+    router.navigate('/history');
   };
 
   if (!activePlayerId || players.length === 0) {
@@ -784,7 +794,7 @@ function createStyles(Colors: ThemeColors) {
     color: Colors.textSecondary,
   },
   outcomeButtonTextActive: {
-    color: Colors.textPrimary,
+    color: '#FFFFFF',
   },
   scoreRow: {
     flexDirection: 'row',

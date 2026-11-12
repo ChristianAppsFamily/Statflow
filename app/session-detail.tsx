@@ -936,7 +936,7 @@ function createStyles(Colors: ThemeColors) {
   outcomeBadgeTextLarge: {
     fontSize: 16,
     fontWeight: '700' as const,
-    color: Colors.textPrimary,
+    color: '#FFFFFF',
   },
   scoreBadge: {
     backgroundColor: Colors.cardBorder,
@@ -990,7 +990,7 @@ function createStyles(Colors: ThemeColors) {
     color: Colors.textSecondary,
   },
   outcomeEditButtonTextActive: {
-    color: Colors.textPrimary,
+    color: '#FFFFFF',
   },
   scoreEditRow: {
     flexDirection: 'row',

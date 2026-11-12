@@ -395,7 +395,7 @@ function createStyles(Colors: ThemeColors) {
   outcomeDotText: {
     fontSize: 10,
     fontWeight: '700' as const,
-    color: Colors.textPrimary,
+    color: '#FFFFFF',
   },
   recentMeta: {
     fontSize: 12,

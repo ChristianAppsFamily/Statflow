@@ -310,7 +310,7 @@ function createStyles(Colors: ThemeColors) {
   outcomeBadgeText: {
     fontSize: 12,
     fontWeight: '700' as const,
-    color: Colors.textPrimary,
+    color: '#FFFFFF',
   },
   scoreContainer: {
     backgroundColor: Colors.cardBorder,
