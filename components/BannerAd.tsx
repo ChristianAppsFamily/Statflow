@@ -81,13 +81,13 @@ export default function BannerAdComponent({
   const adUnitId = getAdUnitId('banner');
   if (!adUnitId) return null;
 
+  // Bottom banners sit above the tab bar (which already owns the home-indicator inset).
+  // Extra paddingBottom here floats the ad too high with a blank gap under it.
   return (
     <View
       style={[
         styles.container,
-        position === 'top'
-          ? { paddingTop: insets.top }
-          : { paddingBottom: insets.bottom },
+        position === 'top' ? { paddingTop: insets.top } : null,
       ]}
     >
       <AdComponent

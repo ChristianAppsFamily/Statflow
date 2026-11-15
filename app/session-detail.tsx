@@ -26,7 +26,12 @@ import { SPORTS_CONFIG } from '@/constants/sports';
 import { Session, Highlight } from '@/types';
 import { ThemeColors } from '@/constants/colors';
 import { useThemeColors } from '@/hooks/useThemeColors';
-import { formatSessionDate } from '@/utils/sessionDate';
+import {
+  formatSessionDate,
+  getLocalDateString,
+  parseSessionDate,
+  toStoredSessionDate,
+} from '@/utils/sessionDate';
 import { persistLocalFile } from '@/utils/mediaPersist';
 
 type HighlightAddMode = 'none' | 'link' | 'file';
@@ -43,6 +48,7 @@ export default function SessionDetailScreen() {
   const session = sessions.find((s) => s.id === sessionId);
   const [isEditing, setIsEditing] = useState(false);
   const [editedSession, setEditedSession] = useState<Session | null>(null);
+  const [editDateText, setEditDateText] = useState('');
   const [highlightAddMode, setHighlightAddMode] = useState<HighlightAddMode>('none');
   const [hlTitle, setHlTitle] = useState('');
   const [hlUrl, setHlUrl] = useState('');
@@ -96,24 +102,36 @@ export default function SessionDetailScreen() {
 
   const handleEdit = () => {
     setEditedSession({ ...session });
+    setEditDateText(getLocalDateString(parseSessionDate(session.date)));
     setIsEditing(true);
   };
 
   const handleSave = () => {
     Keyboard.dismiss();
-    if (editedSession) {
-      updateSession(session.id, editedSession);
-      if (settings.hapticsEnabled && Platform.OS !== 'web') {
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
-      setIsEditing(false);
+    if (!editedSession) return;
+
+    const trimmedDate = editDateText.trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmedDate)) {
+      Alert.alert('Invalid Date', 'Please enter the date as YYYY-MM-DD.');
+      return;
     }
+
+    updateSession(session.id, {
+      ...editedSession,
+      date: toStoredSessionDate(trimmedDate),
+    });
+    if (settings.hapticsEnabled && Platform.OS !== 'web') {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    }
+    setIsEditing(false);
+    setEditDateText('');
   };
 
   const handleCancel = () => {
     Keyboard.dismiss();
     setIsEditing(false);
     setEditedSession(null);
+    setEditDateText('');
   };
 
   const handleDelete = () => {
@@ -413,14 +431,32 @@ export default function SessionDetailScreen() {
         <Text style={styles.sportTitle}>
           {sportConfig.icon} {sportConfig.name}
         </Text>
-        <Text style={styles.date}>
-          {formatSessionDate(session.date, {
-            weekday: 'long',
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric',
-          })}
-        </Text>
+        {isEditing ? (
+          <View style={styles.dateEditGroup}>
+            <Text style={styles.dateEditLabel}>DATE</Text>
+            <TextInput
+              style={styles.dateEditInput}
+              value={editDateText}
+              onChangeText={setEditDateText}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={colors.textSecondary}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="done"
+              blurOnSubmit
+              onSubmitEditing={Keyboard.dismiss}
+            />
+          </View>
+        ) : (
+          <Text style={styles.date}>
+            {formatSessionDate(currentSession.date, {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric',
+            })}
+          </Text>
+        )}
         {(currentSession.outcome || currentSession.teamScore !== undefined) && (
           <View style={styles.gameResultRow}>
             {currentSession.outcome && (
@@ -609,7 +645,7 @@ export default function SessionDetailScreen() {
         <View style={styles.highlightsSectionHeader}>
           <View style={styles.highlightsTitleRow}>
             <Star size={16} color={colors.gold} />
-            <Text style={styles.highlightsSectionTitle}>GAME HIGHLIGHTS</Text>
+            <Text style={styles.highlightsSectionTitle}>HIGHLIGHTS</Text>
           </View>
           {highlightAddMode === 'none' && (
             <View style={styles.highlightAddButtons}>
@@ -916,6 +952,25 @@ function createStyles(Colors: ThemeColors) {
     fontSize: 15,
     color: Colors.textSecondary,
   },
+  dateEditGroup: {
+    gap: 8,
+    marginTop: 4,
+  },
+  dateEditLabel: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: Colors.gold,
+    letterSpacing: 1,
+  },
+  dateEditInput: {
+    backgroundColor: Colors.card,
+    borderRadius: 12,
+    padding: 16,
+    color: Colors.textPrimary,
+    fontSize: 16,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
+  },
   gameResultRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1036,7 +1091,7 @@ function createStyles(Colors: ThemeColors) {
   opponentLabel: {
     fontSize: 11,
     fontWeight: '700' as const,
-    color: Colors.textSecondary,
+    color: Colors.gold,
     letterSpacing: 1,
     marginBottom: 8,
   },
@@ -1054,13 +1109,13 @@ function createStyles(Colors: ThemeColors) {
   notesLabel: {
     fontSize: 11,
     fontWeight: '700' as const,
-    color: Colors.textSecondary,
+    color: Colors.gold,
     letterSpacing: 1,
     marginBottom: 8,
   },
   notesText: {
     fontSize: 15,
-    color: '#d1d5db',
+    color: Colors.textPrimary,
     lineHeight: 22,
   },
   statsTitle: {

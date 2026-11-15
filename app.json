@@ -2,7 +2,7 @@
   "expo": {
     "name": "StatFlow",
     "slug": "statflow",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "statflow",
@@ -16,6 +16,7 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.christianappempire.statflowapp",
+      "buildNumber": "5",
       "appStoreUrl": "https://apps.apple.com/us/app/statflow-youth-sports-tracker/id6763165361",
       "infoPlist": {
         "NSPhotoLibraryUsageDescription": "StatFlow accesses your photos so you can upload player profile images and share game photos with your team.",

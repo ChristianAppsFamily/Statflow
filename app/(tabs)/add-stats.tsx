@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -9,11 +9,14 @@ import {
   Platform,
   Alert,
   Keyboard,
-  KeyboardAvoidingView,
+  InteractionManager,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Plus, Minus, Save, RotateCcw, X, UserPlus, Star, Link } from 'lucide-react-native';
+import { Plus, Minus, Save, RotateCcw, X, UserPlus, Link, Video as VideoIcon } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { SPORTS_CONFIG, SPORT_OPTIONS } from '@/constants/sports';
 import { useApp } from '@/contexts/AppContext';
@@ -26,6 +29,15 @@ import { showInterstitialAd } from '@/services/ads';
 import BannerAdComponent from '@/components/BannerAd';
 import { getLocalDateString, toStoredSessionDate } from '@/utils/sessionDate';
 import { abbreviateCustomStatKey } from '@/utils/sessionStats';
+import { persistLocalFile } from '@/utils/mediaPersist';
+
+type PendingHighlight = {
+  title: string;
+  type: 'link' | 'file';
+  url?: string;
+  localUri?: string;
+  notes?: string;
+};
 
 const DAILY_GAMES_KEY = 'statflow_daily_games';
 
@@ -60,14 +72,74 @@ export default function AddStatsScreen() {
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customStatName, setCustomStatName] = useState('');
   const [opponentScore, setOpponentScore] = useState('');
-  const [showHighlightForm, setShowHighlightForm] = useState(false);
+  const [highlightAddMode, setHighlightAddMode] = useState<'none' | 'link' | 'file'>('none');
   const [hlTitle, setHlTitle] = useState('');
   const [hlUrl, setHlUrl] = useState('');
   const [hlNotes, setHlNotes] = useState('');
-  const [gameHighlights, setGameHighlights] = useState<{ title: string; url: string; notes?: string }[]>([]);
+  const [gameHighlights, setGameHighlights] = useState<PendingHighlight[]>([]);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const shouldResetOnBlurRef = useRef(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollViewRef = useRef<View>(null);
+  const customInputRowRef = useRef<View>(null);
+  const keyboardHeightRef = useRef(0);
+  const scrollOffsetRef = useRef(0);
 
   const sportConfig = selectedSport ? SPORTS_CONFIG[selectedSport] : null;
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      const height = e.endCoordinates.height;
+      keyboardHeightRef.current = height;
+      setKeyboardHeight(height);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      keyboardHeightRef.current = 0;
+      setKeyboardHeight(0);
+    });
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const scrollCustomInputAboveKeyboard = useCallback(() => {
+    const kb = keyboardHeightRef.current;
+    const row = customInputRowRef.current;
+    const scrollView = scrollViewRef.current;
+    if (!row || !scrollView || kb <= 0) return;
+
+    row.measureInWindow((_x, y, _w, height) => {
+      scrollView.measureInWindow((_sx, sy, _sw, sh) => {
+        const inputBottomInView = y + height - sy;
+        const desiredBottom = sh - kb - 24;
+        const delta = inputBottomInView - desiredBottom;
+        if (delta > 0) {
+          scrollRef.current?.scrollTo({
+            y: scrollOffsetRef.current + delta,
+            animated: true,
+          });
+        }
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!showCustomInput || keyboardHeight <= 0) return;
+    const id = requestAnimationFrame(() => {
+      scrollCustomInputAboveKeyboard();
+    });
+    return () => cancelAnimationFrame(id);
+  }, [showCustomInput, keyboardHeight, scrollCustomInputAboveKeyboard]);
+
+  const resetHighlightForm = useCallback(() => {
+    setHighlightAddMode('none');
+    setHlTitle('');
+    setHlUrl('');
+    setHlNotes('');
+  }, []);
 
   const resetForm = useCallback(() => {
     setSelectedSport(null);
@@ -82,11 +154,8 @@ export default function AddStatsScreen() {
     setShowCustomInput(false);
     setCustomStatName('');
     setGameHighlights([]);
-    setShowHighlightForm(false);
-    setHlTitle('');
-    setHlUrl('');
-    setHlNotes('');
-  }, []);
+    resetHighlightForm();
+  }, [resetHighlightForm]);
 
   useFocusEffect(
     useCallback(() => {
@@ -95,9 +164,11 @@ export default function AddStatsScreen() {
         shouldResetOnBlurRef.current = false;
         resetForm();
 
-        // Rule #3: Show interstitial after 3+ games saved in 24h
-        void incrementDailyGames().then((count) => {
-          if (count > 3) void showInterstitialAd();
+        InteractionManager.runAfterInteractions(() => {
+          // Rule #3: Show interstitial after 3+ games saved in 24h
+          void incrementDailyGames().then((count) => {
+            if (count > 3) void showInterstitialAd();
+          });
         });
       };
     }, [resetForm])
@@ -201,8 +272,9 @@ export default function AddStatsScreen() {
       const highlightsToAdd: Highlight[] = gameHighlights.map((hl, idx) => ({
         id: `${sessionId}_hl_${idx}`,
         title: hl.title,
-        type: 'link',
-        url: hl.url,
+        type: hl.type,
+        url: hl.type === 'link' ? hl.url : undefined,
+        localUri: hl.type === 'file' ? hl.localUri : undefined,
         createdAt: new Date().toISOString(),
         sport: selectedSport,
         notes: hl.notes || undefined,
@@ -216,9 +288,75 @@ export default function AddStatsScreen() {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
 
-    // Reset only after this screen blurs so History covers Add Stats first.
+    // Like Create Player: leave first, reset underneath after History covers this screen.
     shouldResetOnBlurRef.current = true;
     router.navigate('/history');
+  };
+
+  const openCustomStatInput = useCallback(() => {
+    setShowCustomInput(true);
+    setTimeout(() => {
+      scrollCustomInputAboveKeyboard();
+    }, 100);
+  }, [scrollCustomInputAboveKeyboard]);
+
+  const onFormScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    scrollOffsetRef.current = e.nativeEvent.contentOffset.y;
+  }, []);
+
+  const handleAddHighlightLink = () => {
+    if (!hlTitle.trim()) {
+      Alert.alert('Missing Title', 'Please enter a title for this highlight.');
+      return;
+    }
+    if (!hlUrl.trim()) {
+      Alert.alert('Missing URL', 'Please enter a video link.');
+      return;
+    }
+    setGameHighlights((prev) => [
+      ...prev,
+      { title: hlTitle.trim(), type: 'link', url: hlUrl.trim(), notes: hlNotes.trim() || undefined },
+    ]);
+    resetHighlightForm();
+    if (settings.hapticsEnabled && Platform.OS !== 'web') {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+  };
+
+  const handlePickHighlightVideo = async () => {
+    if (!hlTitle.trim()) {
+      Alert.alert('Missing Title', 'Please enter a title before choosing a video.');
+      return;
+    }
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission Required', 'Please allow access to your media library.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+      allowsEditing: true,
+      quality: 1,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      const localUri = await persistLocalFile(result.assets[0].uri, 'highlights', 'video');
+      setGameHighlights((prev) => [
+        ...prev,
+        {
+          title: hlTitle.trim(),
+          type: 'file',
+          localUri,
+          notes: hlNotes.trim() || undefined,
+        },
+      ]);
+      resetHighlightForm();
+      if (settings.hapticsEnabled && Platform.OS !== 'web') {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }
+    }
   };
 
   if (!activePlayerId || players.length === 0) {
@@ -250,8 +388,8 @@ export default function AddStatsScreen() {
 
   if (!selectedSport) {
     return (
-      <View style={[styles.sportPickerOuter, { paddingTop: insets.top }]}>
-        {/* Header Banner Ad — shown above the sport selection grid */}
+      <View style={styles.sportPickerOuter}>
+        {/* Header Banner Ad — owns top safe-area inset */}
         <BannerAdComponent position="top" />
         <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: 16 }]}>
           <Text style={styles.title}>Choose Your Sport</Text>
@@ -272,20 +410,22 @@ export default function AddStatsScreen() {
     );
   }
 
+  const formPaddingBottom =
+    showCustomInput && keyboardHeight > 0 ? 40 + keyboardHeight + 24 : 40;
+
   return (
     <View style={styles.container}>
       {/* TOP BANNER AD */}
       <BannerAdComponent position="top" />
-    <KeyboardAvoidingView
-      style={styles.scrollInner}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
-    >
+    <View ref={scrollViewRef} style={styles.scrollInner} collapsable={false}>
     <ScrollView
+      ref={scrollRef}
       style={styles.scrollInner}
-      contentContainerStyle={[styles.content, { paddingTop: 16, paddingBottom: 40 }]}
+      contentContainerStyle={[styles.content, { paddingTop: 16, paddingBottom: formPaddingBottom }]}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
+      onScroll={onFormScroll}
+      scrollEventThrottle={16}
     >
       <View style={styles.header}>
         <Text style={styles.sportTitle}>
@@ -319,7 +459,7 @@ export default function AddStatsScreen() {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>OPPONENT (OPTIONAL)</Text>
+          <Text style={styles.inputLabel}>OPPONENT</Text>
           <TextInput
             style={styles.input}
             value={opponent}
@@ -333,7 +473,7 @@ export default function AddStatsScreen() {
         </View>
 
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>NOTES (OPTIONAL)</Text>
+          <Text style={styles.inputLabel}>NOTES</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
             value={notes}
@@ -488,7 +628,7 @@ export default function AddStatsScreen() {
         ))}
 
         {showCustomInput ? (
-          <View style={styles.customInputRow}>
+          <View style={styles.customInputRow} ref={customInputRowRef} collapsable={false}>
             <TextInput
               style={styles.customNameInput}
               value={customStatName}
@@ -496,6 +636,9 @@ export default function AddStatsScreen() {
               placeholder="Stat name (e.g. Steals)"
               placeholderTextColor={colors.textSecondary}
               autoFocus
+              onFocus={() => {
+                setTimeout(() => scrollCustomInputAboveKeyboard(), 50);
+              }}
               onSubmitEditing={() => {
                 const name = customStatName.trim();
                 if (!name) return;
@@ -534,7 +677,7 @@ export default function AddStatsScreen() {
         ) : (
           <TouchableOpacity
             style={styles.addCustomButton}
-            onPress={() => setShowCustomInput(true)}
+            onPress={openCustomStatInput}
           >
             <Plus size={18} color={colors.gold} />
             <Text style={styles.addCustomButtonText}>Add Custom Stat</Text>
@@ -542,12 +685,36 @@ export default function AddStatsScreen() {
         )}
       </View>
 
-      <Text style={styles.sectionTitle}>GAME HIGHLIGHTS</Text>
+      <View style={styles.highlightsSectionHeader}>
+        <Text style={[styles.sectionTitle, styles.highlightsSectionTitle]}>HIGHLIGHTS</Text>
+        {highlightAddMode === 'none' && (
+          <View style={styles.highlightAddButtons}>
+            <TouchableOpacity
+              style={styles.hlAddBtn}
+              onPress={() => setHighlightAddMode('link')}
+            >
+              <Link size={14} color={colors.gold} />
+              <Text style={styles.hlAddBtnText}>LINK</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.hlAddBtn}
+              onPress={() => setHighlightAddMode('file')}
+            >
+              <VideoIcon size={14} color={colors.gold} />
+              <Text style={styles.hlAddBtnText}>VIDEO</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
       <View style={styles.highlightsContainer}>
         {gameHighlights.map((hl, idx) => (
           <View key={idx} style={styles.hlCard}>
             <View style={styles.hlCardIcon}>
-              <Link size={14} color={colors.gold} />
+              {hl.type === 'file' ? (
+                <VideoIcon size={14} color={colors.gold} />
+              ) : (
+                <Link size={14} color={colors.gold} />
+              )}
             </View>
             <View style={styles.hlCardContent}>
               <Text style={styles.hlCardTitle} numberOfLines={1}>{hl.title}</Text>
@@ -562,11 +729,13 @@ export default function AddStatsScreen() {
           </View>
         ))}
 
-        {showHighlightForm ? (
+        {highlightAddMode !== 'none' && (
           <View style={styles.hlFormCard}>
             <View style={styles.hlFormHeader}>
-              <Text style={styles.hlFormTitle}>Add Highlight Link</Text>
-              <TouchableOpacity onPress={() => { setShowHighlightForm(false); setHlTitle(''); setHlUrl(''); setHlNotes(''); }}>
+              <Text style={styles.hlFormTitle}>
+                {highlightAddMode === 'link' ? 'Add Video Link' : 'Upload Video'}
+              </Text>
+              <TouchableOpacity onPress={resetHighlightForm}>
                 <X size={18} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
@@ -582,22 +751,24 @@ export default function AddStatsScreen() {
                 blurOnSubmit
               />
             </View>
+            {highlightAddMode === 'link' && (
+              <View style={styles.hlInputGroup}>
+                <Text style={styles.hlInputLabel}>VIDEO URL</Text>
+                <TextInput
+                  style={styles.hlInput}
+                  value={hlUrl}
+                  onChangeText={setHlUrl}
+                  placeholder="https://youtube.com/..."
+                  placeholderTextColor={colors.textSecondary}
+                  keyboardType="url"
+                  autoCapitalize="none"
+                  returnKeyType="done"
+                  blurOnSubmit
+                />
+              </View>
+            )}
             <View style={styles.hlInputGroup}>
-              <Text style={styles.hlInputLabel}>VIDEO URL</Text>
-              <TextInput
-                style={styles.hlInput}
-                value={hlUrl}
-                onChangeText={setHlUrl}
-                placeholder="https://youtube.com/..."
-                placeholderTextColor={colors.textSecondary}
-                keyboardType="url"
-                autoCapitalize="none"
-                returnKeyType="done"
-                blurOnSubmit
-              />
-            </View>
-            <View style={styles.hlInputGroup}>
-              <Text style={styles.hlInputLabel}>NOTES (OPTIONAL)</Text>
+              <Text style={styles.hlInputLabel}>NOTES</Text>
               <TextInput
                 style={[styles.hlInput, styles.hlTextArea]}
                 value={hlNotes}
@@ -612,37 +783,14 @@ export default function AddStatsScreen() {
             </View>
             <TouchableOpacity
               style={styles.hlSaveBtn}
-              onPress={() => {
-                if (!hlTitle.trim()) {
-                  Alert.alert('Missing Title', 'Please enter a title for this highlight.');
-                  return;
-                }
-                if (!hlUrl.trim()) {
-                  Alert.alert('Missing URL', 'Please enter a video link.');
-                  return;
-                }
-                setGameHighlights((prev) => [...prev, { title: hlTitle.trim(), url: hlUrl.trim(), notes: hlNotes.trim() || undefined }]);
-                setHlTitle('');
-                setHlUrl('');
-                setHlNotes('');
-                setShowHighlightForm(false);
-                if (settings.hapticsEnabled && Platform.OS !== 'web') {
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                }
-              }}
+              onPress={highlightAddMode === 'link' ? handleAddHighlightLink : handlePickHighlightVideo}
             >
               <Plus size={16} color={colors.navy} />
-              <Text style={styles.hlSaveBtnText}>Add Highlight</Text>
+              <Text style={styles.hlSaveBtnText}>
+                {highlightAddMode === 'link' ? 'Save Link' : 'Choose Video'}
+              </Text>
             </TouchableOpacity>
           </View>
-        ) : (
-          <TouchableOpacity
-            style={styles.addHighlightButton}
-            onPress={() => setShowHighlightForm(true)}
-          >
-            <Star size={16} color={colors.gold} />
-            <Text style={styles.addHighlightButtonText}>Add Game Highlight</Text>
-          </TouchableOpacity>
         )}
       </View>
 
@@ -657,7 +805,7 @@ export default function AddStatsScreen() {
         </TouchableOpacity>
       </View>
     </ScrollView>
-    </KeyboardAvoidingView>
+    </View>
     </View>
   );
 }
@@ -741,7 +889,7 @@ function createStyles(Colors: ThemeColors) {
   inputLabel: {
     fontSize: 11,
     fontWeight: '700' as const,
-    color: Colors.textSecondary,
+    color: Colors.gold,
     letterSpacing: 1,
   },
   input: {
@@ -763,6 +911,36 @@ function createStyles(Colors: ThemeColors) {
     color: Colors.gold,
     letterSpacing: 1.5,
     marginBottom: 16,
+  },
+  highlightsSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  highlightsSectionTitle: {
+    marginBottom: 0,
+  },
+  highlightAddButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  hlAddBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.card,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.cardBorder,
+  },
+  hlAddBtnText: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: Colors.gold,
+    letterSpacing: 0.5,
   },
   gameResultSection: {
     marginBottom: 32,

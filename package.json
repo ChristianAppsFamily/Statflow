@@ -8,7 +8,8 @@
     "start-web-dev": "DEBUG=expo* bunx rork start -p 8uxtuslk3ots0xb6z4yix --web --tunnel",
     "lint": "expo lint",
     "android": "expo run:android",
-    "ios": "expo run:ios"
+    "ios": "expo run:ios",
+    "postinstall": "node scripts/patch-fabric-provider.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { Home, Users, ChevronRight, History } from 'lucide-react-native';
+import { ChevronRight } from 'lucide-react-native';
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -41,7 +41,7 @@ export default function HomeScreen() {
     return players.find((p) => p.id === playerId) ?? null;
   };
 
-  const getTopStats = (session: Session) => getSessionStatSummary(session, 4);
+  const getTopStats = (session: Session) => getSessionStatSummary(session, 6);
 
   return (
     <View style={styles.outerContainer}>
@@ -70,7 +70,6 @@ export default function HomeScreen() {
           style={styles.primaryButton}
           onPress={() => router.push('/players')}
         >
-          <Users size={24} color={colors.navy} />
           <Text style={styles.primaryButtonText}>Player Profiles</Text>
         </TouchableOpacity>
 
@@ -78,7 +77,6 @@ export default function HomeScreen() {
           style={styles.secondaryButton}
           onPress={() => router.push('/add-stats')}
         >
-          <Home size={20} color={colors.gold} />
           <Text style={styles.secondaryButtonText}>Start a New Game</Text>
         </TouchableOpacity>
 
@@ -86,7 +84,6 @@ export default function HomeScreen() {
           style={styles.tertiaryButton}
           onPress={() => router.push('/history')}
         >
-          <History size={20} color={colors.gold} />
           <Text style={styles.tertiaryButtonText}>Game History</Text>
         </TouchableOpacity>
       </View>
@@ -245,10 +242,8 @@ function createStyles(Colors: ThemeColors) {
     borderRadius: 12,
     paddingVertical: 18,
     paddingHorizontal: 24,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
   },
   primaryButtonText: {
     color: Colors.navy,
@@ -260,10 +255,8 @@ function createStyles(Colors: ThemeColors) {
     borderRadius: 12,
     paddingVertical: 18,
     paddingHorizontal: 24,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
     borderWidth: 2,
     borderColor: Colors.gold,
   },
@@ -275,19 +268,17 @@ function createStyles(Colors: ThemeColors) {
   tertiaryButton: {
     backgroundColor: 'transparent',
     borderRadius: 12,
-    paddingVertical: 14,
+    paddingVertical: 18,
     paddingHorizontal: 24,
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
     borderWidth: 1,
     borderColor: Colors.gold,
   },
   tertiaryButtonText: {
     color: Colors.gold,
-    fontSize: 16,
-    fontWeight: '600' as const,
+    fontSize: 17,
+    fontWeight: '700' as const,
   },
 
   footer: {
@@ -401,23 +392,23 @@ function createStyles(Colors: ThemeColors) {
   },
   recentStatsRow: {
     flexDirection: 'row',
-    gap: 12,
-    paddingLeft: 46,
+    justifyContent: 'space-between',
+    gap: 4,
   },
   recentStatItem: {
+    flex: 1,
     alignItems: 'center',
-    minWidth: 40,
   },
   recentStatValue: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '700' as const,
     color: Colors.textPrimary,
   },
   recentStatLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '600' as const,
     color: Colors.textSecondary,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
     marginTop: 1,
   },
   activePlayerBanner: {
